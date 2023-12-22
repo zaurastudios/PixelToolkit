@@ -5,7 +5,7 @@ import App from "./App";
 const container = document.getElementById("root") as HTMLElement;
 const root = createRoot(container);
 root.render(
-  <ThemeProvider defaultTheme="dark" forcedTheme="dark" attribute="class">
+  <ThemeProvider defaultTheme="dark" attribute="class">
     <App />
   </ThemeProvider>,
 );

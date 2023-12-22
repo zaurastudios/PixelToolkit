@@ -4,7 +4,6 @@ import {
   shell,
   BrowserWindow,
   MenuItemConstructorOptions,
-  ipcRenderer,
 } from "electron";
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {

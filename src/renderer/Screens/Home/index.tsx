@@ -16,7 +16,7 @@ export default function Home() {
                 href="https://github.com/null511/PixelGraph-Release"
                 target="_blank"
                 rel="noreferrer"
-                className="underline text-white/90"
+                className="underline text-foreground/90"
               >
                 PixelGraph
               </a>
