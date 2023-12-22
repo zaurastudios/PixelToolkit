@@ -73,6 +73,7 @@ const createWindow = async () => {
     show: false,
     width: 1024,
     height: 728,
+    autoHideMenuBar: true,
     icon: getAssetPath("icon.png"),
     webPreferences: {
       preload: app.isPackaged
@@ -137,3 +138,5 @@ app
     });
   })
   .catch(console.log);
+
+ipcMain.on("close-app", () => app.quit());
