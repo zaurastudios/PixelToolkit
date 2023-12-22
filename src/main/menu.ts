@@ -253,6 +253,30 @@ export default class MenuBuilder {
                 },
               ],
       },
+      {
+        label: "View",
+        submenu: [
+          {
+            label: "Theme",
+            submenu: [
+              {
+                label: "Dark",
+                click: () =>
+                  this.mainWindow.webContents.send("change-theme", {
+                    theme: "dark",
+                  }),
+              },
+              {
+                label: "Light",
+                click: () =>
+                  this.mainWindow.webContents.send("change-theme", {
+                    theme: "light",
+                  }),
+              },
+            ],
+          },
+        ],
+      },
     ];
 
     return templateDefault;

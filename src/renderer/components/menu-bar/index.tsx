@@ -13,9 +13,14 @@ export default function MenuBar() {
   // Route back to home page if native menu is reacted
   window.electron.ipcRenderer.on("go-home", () => navigate("/"));
 
+  // Changing theme from quick, and native menu bar
   const changeTheme = (selectedTheme: "light" | "dark") =>
     setTheme(selectedTheme);
-  console.log(theme);
+
+  window.electron.ipcRenderer.on(
+    "change-theme",
+    (e: { theme: "dark" | "light" }) => changeTheme(e.theme),
+  );
 
   return (
     <nav className="p-4 w-max pb-0">
