@@ -20,13 +20,11 @@ export default function Home() {
               >
                 PixelGraph
               </a>
-              . It allows you to work in a &quot;raw&quot; texture space and
-              automates publishing to one or more encodings, rather than trying
-              to directly encode your textures as design-time. Yaml
-              configuration files can also be used to apply final adjustments to
-              your compiled textures. A cross-platform command-line version is
-              also available, allowing you to completely automating your
-              publishing process from your remote content repository.
+              . It allows you to convert raw texture files, or{" "}
+              <code className="bg-foreground/10 rounded-lg px-2 py-1">
+                .sbs
+              </code>{" "}
+              files to a PBR format that is accepted in Minecraft.
             </Card.CardDescription>
           </Card.CardHeader>
         </Card.Card>

@@ -76,6 +76,7 @@ const createWindow = async () => {
     autoHideMenuBar: true,
     icon: getAssetPath("icon.png"),
     webPreferences: {
+      contextIsolation: true,
       preload: app.isPackaged
         ? path.join(__dirname, "preload.js")
         : path.join(__dirname, "../../.erb/dll/preload.js"),
@@ -139,4 +140,5 @@ app
   })
   .catch(console.log);
 
+// Close app event
 ipcMain.on("close-app", () => app.quit());

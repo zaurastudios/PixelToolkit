@@ -17,9 +17,8 @@ export default function MenuBar() {
   const changeTheme = (selectedTheme: "light" | "dark") =>
     setTheme(selectedTheme);
 
-  window.electron.ipcRenderer.on(
-    "change-theme",
-    (e: { theme: "dark" | "light" }) => changeTheme(e.theme),
+  window.electron.ipcRenderer.on("change-theme", (e: any) =>
+    changeTheme(e.theme),
   );
 
   return (
@@ -47,8 +46,8 @@ export default function MenuBar() {
           <Menu.MenubarTrigger>View</Menu.MenubarTrigger>
 
           {/* Quick theme switch */}
-          <Menu.MenubarSeparator />
           <Menu.MenubarContent>
+            <Menu.MenubarSeparator />
             <Menu.MenubarSub>
               <Menu.MenubarSubTrigger>Theme</Menu.MenubarSubTrigger>
               <Menu.MenubarSubContent>

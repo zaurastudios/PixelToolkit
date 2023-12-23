@@ -22,6 +22,7 @@ const electronHandler = {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
   },
+  isMac: process.platform === "darwin",
 };
 
 contextBridge.exposeInMainWorld("electron", electronHandler);
