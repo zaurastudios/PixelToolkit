@@ -5,16 +5,17 @@ import * as Drawer from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Projects from ".";
 
-interface OpenedDirProps {
-  cancelled: boolean;
+interface OpenedProps {
+  canceled: boolean;
   filePaths: string[];
 }
 
 export default function CreateProject() {
   const [path, setPath] = useState<string>("");
+  const [ymlPath, setYmlPath] = useState<string>("");
   const [cancelled, setCancelled] = useState(false);
 
   const whileTap = { scale: 0.9 };
@@ -22,16 +23,30 @@ export default function CreateProject() {
 
   // Handling selecting dir
   function sendOpenDirReq() {
+    setYmlPath("");
+    setCancelled(false);
     window.electron.ipcRenderer.sendMessage("open-directory");
   }
 
   window.electron.ipcRenderer.on("opened-directory", (event) => {
-    const { cancelled, filePaths } = event as OpenedDirProps;
+    const { canceled, filePaths } = event as OpenedProps;
     console.log(event);
-    if (cancelled) {
+    if (canceled) {
       setCancelled(true);
     } else {
-      setPath(filePaths[0]);
+      setYmlPath(filePaths[0]);
+    }
+  });
+
+  // Handling selecting existisng project .yml
+  function sendSelectYmlReq() {}
+
+  window.electron.ipcRenderer.on("opened-yml", (event) => {
+    const { canceled, filePaths } = event as OpenedProps;
+    if (canceled) {
+      setCancelled(true);
+    } else {
+      setYmlPath(filePaths[0]);
     }
   });
 
@@ -40,6 +55,7 @@ export default function CreateProject() {
       onOpenChange={(e) => {
         if (!e) {
           setPath("");
+          setYmlPath("");
           setCancelled(false);
         }
       }}
@@ -57,12 +73,12 @@ export default function CreateProject() {
           </Card.CardHeader>
         </MotionCardComponent>
       </Drawer.DrawerTrigger>
-
-      <Drawer.DrawerContent>
+      <Drawer.DrawerContent className="h-full max-h-[70%] mt-32">
         <Drawer.DrawerHeader>
           <Drawer.DrawerTitle>Create a new project</Drawer.DrawerTitle>
           <Drawer.DrawerDescription>
-            You can also import PixelGraph projects
+            You can also import PixelGraph projects. Start by clicking on the
+            Select Directory button.
           </Drawer.DrawerDescription>
         </Drawer.DrawerHeader>
 
@@ -74,24 +90,47 @@ export default function CreateProject() {
             className="mt-2 flex flex-col gap-4"
           >
             <div className="flex items-center gap-4">
-              <Button
-                onClick={() => sendOpenDirReq()}
-                className="w-max"
-                variant={!!path && !cancelled ? "outline" : undefined}
-              >
-                Select Dir
-              </Button>
-              {cancelled ? (
+              <div className="flex gap-2 items-center">
+                <Button
+                  onClick={() => sendOpenDirReq()}
+                  className="w-max"
+                  variant={!!path && !cancelled ? "outline" : undefined}
+                >
+                  Select Directory
+                </Button>
+                <Button
+                  onClick={() => sendSelectYmlReq()}
+                  className="w-max"
+                  variant={!!ymlPath && !cancelled ? "outline" : "secondary"}
+                >
+                  Select Existing Project
+                </Button>
+              </div>
+              {cancelled && (
                 <p className="text-red-500 text-sm">
-                  Select a folder to continue
+                  Select a folder/project.yml to continue
                 </p>
-              ) : (
+              )}
+              {!!path && (
                 <code id="dir-path" className="text-sm text-foreground/80">
                   <em>{path}</em>
                   <Input
                     className="border-0 hidden p-0 max-w-none"
                     disabled
+                    name="dir-path"
                     value={path}
+                    aria-hidden
+                  />
+                </code>
+              )}
+              {!!ymlPath && (
+                <code id="yml-path" className="text-sm text-foreground/80">
+                  <em>{path}</em>
+                  <Input
+                    className="border-0 hidden p-0 max-w-none"
+                    disabled
+                    name="yml-path"
+                    value={ymlPath}
                     aria-hidden
                   />
                 </code>
@@ -108,12 +147,18 @@ export default function CreateProject() {
                   className="flex flex-col gap-4"
                 >
                   <div className="grid w-full max-w-sm items-center gap-1.5">
-                    <Label htmlFor="project">Project Name</Label>
+                    <Label aria-required htmlFor="project">
+                      Project Name{" "}
+                      <span className="text-red-500" aria-hidden>
+                        *
+                      </span>
+                    </Label>
                     <Input
                       type="text"
                       id="project"
                       name="project"
                       placeholder="My Amazing Project"
+                      required
                     />
                   </div>
                 </motion.div>

@@ -122,6 +122,14 @@ const createWindow = async () => {
     });
     e.reply("opened-directory", dir);
   });
+
+  ipcMain.on("open-yml", async (e) => {
+    const dir = await dialog.showOpenDialog(mainWindow!, {
+      properties: ["openFile", "createDirectory"],
+      filters: [{ name: "Project File", extensions: ["yml", "yaml"] }],
+    });
+    e.reply("opened-yml", dir);
+  });
 };
 
 /**
