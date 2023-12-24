@@ -1,4 +1,4 @@
-import { Menu, BrowserWindow, ipcMain } from "electron";
+import { Menu, BrowserWindow } from "electron";
 
 export default class MenuBuilder {
   mainWindow: BrowserWindow;

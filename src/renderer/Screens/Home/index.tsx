@@ -1,11 +1,11 @@
 import * as Card from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import Projects from "./projects";
 
 export default function Home() {
   return (
     <main>
       <section className="p-4">
-        <Card.Card>
+        <Card.Card className="rounded-xl">
           <Card.CardHeader>
             <Card.CardTitle className="text-4xl font-semibold">
               PixelToolkit
@@ -29,10 +29,9 @@ export default function Home() {
           </Card.CardHeader>
         </Card.Card>
       </section>
-      <h1>Hii</h1>
-      <Link to="/test" className="underliner">
-        Go to test
-      </Link>
+      <section className="p-4 pt-0">
+        <Projects />
+      </section>
     </main>
   );
 }
