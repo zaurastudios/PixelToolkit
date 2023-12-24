@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from "path";
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
 import MenuBuilder from "./menu";
@@ -114,6 +114,14 @@ const createWindow = async () => {
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
+
+  // Open directory dialog
+  ipcMain.on("open-directory", async (e) => {
+    const dir = await dialog.showOpenDialog(mainWindow!, {
+      properties: ["openDirectory"],
+    });
+    e.reply("opened-directory", dir);
+  });
 };
 
 /**
