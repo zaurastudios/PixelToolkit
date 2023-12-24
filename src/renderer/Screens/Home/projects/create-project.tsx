@@ -5,8 +5,8 @@ import * as Drawer from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
-import Projects from ".";
+import { useState } from "react";
+import NewProjectContent from "./new-project";
 
 interface OpenedProps {
   canceled: boolean;
@@ -30,16 +30,19 @@ export default function CreateProject() {
 
   window.electron.ipcRenderer.on("opened-directory", (event) => {
     const { canceled, filePaths } = event as OpenedProps;
-    console.log(event);
     if (canceled) {
       setCancelled(true);
     } else {
-      setYmlPath(filePaths[0]);
+      setPath(filePaths[0]);
     }
   });
 
   // Handling selecting existisng project .yml
-  function sendSelectYmlReq() {}
+  function sendSelectYmlReq() {
+    setPath("");
+    setCancelled(false);
+    window.electron.ipcRenderer.sendMessage("open-yml");
+  }
 
   window.electron.ipcRenderer.on("opened-yml", (event) => {
     const { canceled, filePaths } = event as OpenedProps;
@@ -86,6 +89,7 @@ export default function CreateProject() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              console.log(new FormData(e.currentTarget));
             }}
             className="mt-2 flex flex-col gap-4"
           >
@@ -94,14 +98,14 @@ export default function CreateProject() {
                 <Button
                   onClick={() => sendOpenDirReq()}
                   className="w-max"
-                  variant={!!path && !cancelled ? "outline" : undefined}
+                  variant={path ? "outline" : undefined}
                 >
                   Select Directory
                 </Button>
                 <Button
                   onClick={() => sendSelectYmlReq()}
                   className="w-max"
-                  variant={!!ymlPath && !cancelled ? "outline" : "secondary"}
+                  variant={ymlPath ? "outline" : "secondary"}
                 >
                   Select Existing Project
                 </Button>
@@ -111,7 +115,7 @@ export default function CreateProject() {
                   Select a folder/project.yml to continue
                 </p>
               )}
-              {!!path && (
+              {path && (
                 <code id="dir-path" className="text-sm text-foreground/80">
                   <em>{path}</em>
                   <Input
@@ -123,9 +127,9 @@ export default function CreateProject() {
                   />
                 </code>
               )}
-              {!!ymlPath && (
+              {ymlPath && (
                 <code id="yml-path" className="text-sm text-foreground/80">
-                  <em>{path}</em>
+                  <em>{ymlPath}</em>
                   <Input
                     className="border-0 hidden p-0 max-w-none"
                     disabled
@@ -137,33 +141,8 @@ export default function CreateProject() {
               )}
             </div>
 
-            {!!path && !cancelled && (
-              <AnimatePresence>
-                <motion.div
-                  key="show-once-path-is-selected"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col gap-4"
-                >
-                  <div className="grid w-full max-w-sm items-center gap-1.5">
-                    <Label aria-required htmlFor="project">
-                      Project Name{" "}
-                      <span className="text-red-500" aria-hidden>
-                        *
-                      </span>
-                    </Label>
-                    <Input
-                      type="text"
-                      id="project"
-                      name="project"
-                      placeholder="My Amazing Project"
-                      required
-                    />
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            )}
+            {path && <NewProjectContent />}
+            {ymlPath && <h1>fNice</h1>}
           </form>
         </div>
       </Drawer.DrawerContent>

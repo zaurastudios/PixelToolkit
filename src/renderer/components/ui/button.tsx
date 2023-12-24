@@ -39,18 +39,37 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   whileTap?: number;
+  initial?: number;
+  animate?: number;
+  exit?: number;
+  key?: string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { className, variant, size, asChild = false, whileTap = 0.9, ...props },
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      whileTap = 0.9,
+      initial = 1,
+      animate = 1,
+      exit = 1,
+      key,
+      ...props
+    },
     ref,
   ) => {
     const Comp = motion(asChild ? Slot : "button");
     return (
       // @ts-ignore
       <Comp
+        key={key}
         whileTap={{ scale: whileTap }}
+        initial={{ opacity: initial }}
+        animate={{ opacity: animate }}
+        exit={{ opacity: exit }}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
