@@ -91,7 +91,7 @@ export interface Config {
 export interface ProjectFile {
   id: string;
   path: string;
-  title: string;
+  name: string;
   description: string;
   dateModified: Date;
 }

@@ -7,6 +7,8 @@ import {
   getConfigData,
   saveConfigData,
 } from "../config-dir";
+import path from "path";
+import YAML from "yaml";
 
 export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
   // Open directory dialog
@@ -47,7 +49,11 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
   // Initialising the yml file in the directory
   ipcMain.on("create-project-in-dir", (event, arg) => {
     try {
-      const { path, projectTitle, projectDescription } = arg as {
+      const {
+        path: projectPath,
+        projectTitle,
+        projectDescription,
+      } = arg as {
         [k: string]: string;
       };
       const id = randomUUID();
@@ -55,7 +61,7 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
       const config: Config | false = getConfigData();
       if (config) {
         const checkIfPathAlreadyExists = config.projectFiles.filter(
-          (project) => project.path === path,
+          (project) => project.path === projectPath,
         );
         if (checkIfPathAlreadyExists.length > 0) {
           event.reply("create-error", "Project path already exists");
@@ -64,8 +70,8 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
 
         const data: ProjectFile = {
           id,
-          path,
-          title: projectTitle,
+          path: projectPath,
+          name: projectTitle,
           description: projectDescription,
           dateModified: new Date(),
         };
@@ -73,11 +79,25 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
 
         const updateConfig = saveConfigData(config);
         if (updateConfig) {
-          // TODO: Create .yml file in the path dir
+          const ymlPath = path.join(projectPath, "project.yml");
+
+          const doc: { [k: string]: any } = {};
+          (doc.name = projectTitle),
+            (doc.description = projectDescription),
+            fs.writeFileSync(ymlPath, YAML.stringify(doc), "utf8");
+
+          // Create the default blocks folder
+          fs.mkdirSync(
+            path.join(projectPath, "/assets/minecraft/textures/block"),
+            { recursive: true },
+          );
         } else {
           event.reply("error-create", "Error creating project");
         }
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+      event.reply("error-create", "Error creating project");
+    }
   });
 }
