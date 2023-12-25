@@ -64,7 +64,7 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
           (project) => project.path === projectPath,
         );
         if (checkIfPathAlreadyExists.length > 0) {
-          event.reply("create-error", "Project path already exists");
+          event.reply("error-create", "Project path already exists");
           return;
         }
 
@@ -91,6 +91,8 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
             path.join(projectPath, "/assets/minecraft/textures/block"),
             { recursive: true },
           );
+
+          event.reply("created", { id });
         } else {
           event.reply("error-create", "Error creating project");
         }

@@ -5,6 +5,7 @@ import * as Drawer from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import NewProjectContent from "./new-project";
+import { useToast } from "@/components/ui/use-toast";
 
 interface OpenedProps {
   canceled: boolean;
@@ -13,6 +14,10 @@ interface OpenedProps {
 }
 
 export default function CreateProject() {
+  const { toast } = useToast();
+
+  const [open, setOpen] = useState(true);
+
   const [path, setPath] = useState<string>("");
   const [ymlPath, setYmlPath] = useState<string>("");
   const [cancelled, setCancelled] = useState(false);
@@ -76,11 +81,20 @@ export default function CreateProject() {
     }
   }
 
+  // Handling create errors
+  window.electron.ipcRenderer.on("error-create", (event) => {
+    if (event) {
+      toast({ title: event as string, variant: "destructive" });
+    }
+  });
+
   return (
     <Drawer.Drawer
       onOpenChange={(e) => {
         if (!e) reset();
+        setOpen(e);
       }}
+      open={open}
       shouldScaleBackground
     >
       <Drawer.DrawerTrigger asChild>
@@ -95,6 +109,7 @@ export default function CreateProject() {
           </Card.CardHeader>
         </MotionCardComponent>
       </Drawer.DrawerTrigger>
+
       <Drawer.DrawerContent className="h-full max-h-[70%] mt-32">
         <Drawer.DrawerHeader>
           <Drawer.DrawerTitle>Create a new project</Drawer.DrawerTitle>
