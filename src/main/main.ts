@@ -14,6 +14,7 @@ import { autoUpdater } from "electron-updater";
 import log from "electron-log";
 import MenuBuilder from "./menu";
 import { resolveHtmlPath } from "./util";
+import AllEvents from "./ipc-events";
 
 class AppUpdater {
   constructor() {
@@ -115,21 +116,7 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 
-  // Open directory dialog
-  ipcMain.on("open-directory", async (e) => {
-    const dir = await dialog.showOpenDialog(mainWindow!, {
-      properties: ["openDirectory"],
-    });
-    e.reply("opened-directory", dir);
-  });
-
-  ipcMain.on("open-yml", async (e) => {
-    const dir = await dialog.showOpenDialog(mainWindow!, {
-      properties: ["openFile", "createDirectory"],
-      filters: [{ name: "Project File", extensions: ["yml", "yaml"] }],
-    });
-    e.reply("opened-yml", dir);
-  });
+  AllEvents(mainWindow);
 };
 
 /**

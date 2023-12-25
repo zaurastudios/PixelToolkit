@@ -25,7 +25,6 @@ export default function NewProjectContent() {
           </Label>
           <Input
             type="text"
-            id="project"
             name="project"
             placeholder="My Amazing Project"
             required
@@ -33,7 +32,9 @@ export default function NewProjectContent() {
           />
         </div>
 
-        {title && <Button className="w-max">Create</Button>}
+        <Button className="w-max" type="submit">
+          Create
+        </Button>
       </motion.div>
     </AnimatePresence>
   );

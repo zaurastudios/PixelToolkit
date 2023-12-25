@@ -53,6 +53,13 @@ export default function CreateProject() {
     }
   });
 
+  function submitHandler(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    console.log(formData.get("project"));
+    console.log(formData.get("dir-path"));
+  }
+
   return (
     <Drawer.Drawer
       onOpenChange={(e) => {
@@ -86,19 +93,14 @@ export default function CreateProject() {
         </Drawer.DrawerHeader>
 
         <div className="p-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              console.log(new FormData(e.currentTarget));
-            }}
-            className="mt-2 flex flex-col gap-4"
-          >
+          <form onSubmit={submitHandler} className="mt-2 flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <div className="flex gap-2 items-center">
                 <Button
                   onClick={() => sendOpenDirReq()}
                   className="w-max"
                   variant={path ? "outline" : undefined}
+                  type="button"
                 >
                   Select Directory
                 </Button>
@@ -106,6 +108,7 @@ export default function CreateProject() {
                   onClick={() => sendSelectYmlReq()}
                   className="w-max"
                   variant={ymlPath ? "outline" : "secondary"}
+                  type="button"
                 >
                   Select Existing Project
                 </Button>
@@ -118,9 +121,9 @@ export default function CreateProject() {
               {path && (
                 <code id="dir-path" className="text-sm text-foreground/80">
                   <em>{path}</em>
-                  <Input
-                    className="border-0 hidden p-0 max-w-none"
-                    disabled
+                  <input
+                    className="hidden"
+                    readOnly
                     name="dir-path"
                     value={path}
                     aria-hidden
@@ -130,11 +133,11 @@ export default function CreateProject() {
               {ymlPath && (
                 <code id="yml-path" className="text-sm text-foreground/80">
                   <em>{ymlPath}</em>
-                  <Input
-                    className="border-0 hidden p-0 max-w-none"
-                    disabled
+                  <input
+                    className="hidden"
                     name="yml-path"
                     value={ymlPath}
+                    readOnly
                     aria-hidden
                   />
                 </code>
