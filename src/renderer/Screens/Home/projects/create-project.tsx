@@ -11,27 +11,37 @@ import NewProjectContent from "./new-project";
 interface OpenedProps {
   canceled: boolean;
   filePaths: string[];
+  isNotEmpty?: boolean;
 }
 
 export default function CreateProject() {
   const [path, setPath] = useState<string>("");
   const [ymlPath, setYmlPath] = useState<string>("");
   const [cancelled, setCancelled] = useState(false);
+  const [empty, setEmpty] = useState(true);
 
   const whileTap = { scale: 0.9 };
   const MotionCardComponent = motion(Card.Card);
 
   // Handling selecting dir
-  function sendOpenDirReq() {
+  function reset() {
+    setPath("");
     setYmlPath("");
     setCancelled(false);
+    setEmpty(true);
+  }
+
+  function sendOpenDirReq() {
+    reset();
     window.electron.ipcRenderer.sendMessage("open-directory");
   }
 
   window.electron.ipcRenderer.on("opened-directory", (event) => {
-    const { canceled, filePaths } = event as OpenedProps;
+    const { canceled, filePaths, isNotEmpty } = event as OpenedProps;
     if (canceled) {
       setCancelled(true);
+    } else if (isNotEmpty) {
+      setEmpty(false);
     } else {
       setPath(filePaths[0]);
     }
@@ -39,8 +49,7 @@ export default function CreateProject() {
 
   // Handling selecting existisng project .yml
   function sendSelectYmlReq() {
-    setPath("");
-    setCancelled(false);
+    reset();
     window.electron.ipcRenderer.sendMessage("open-yml");
   }
 
@@ -63,11 +72,7 @@ export default function CreateProject() {
   return (
     <Drawer.Drawer
       onOpenChange={(e) => {
-        if (!e) {
-          setPath("");
-          setYmlPath("");
-          setCancelled(false);
-        }
+        if (!e) reset();
       }}
       shouldScaleBackground
     >
@@ -116,6 +121,11 @@ export default function CreateProject() {
               {cancelled && (
                 <p className="text-red-500 text-sm">
                   Select a folder/project.yml to continue
+                </p>
+              )}
+              {!empty && (
+                <p className="text-red-500 text-sm">
+                  Please choose an empty directory
                 </p>
               )}
               {path && (
