@@ -1,5 +1,12 @@
+import { randomUUID } from "crypto";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import fs from "fs";
+import {
+  Config,
+  ProjectFile,
+  getConfigData,
+  saveConfigData,
+} from "../config-dir";
 
 export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
   // Open directory dialog
@@ -35,5 +42,42 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
       filters: [{ name: "Project File", extensions: ["yml", "yaml"] }],
     });
     e.reply("opened-yml", file);
+  });
+
+  // Initialising the yml file in the directory
+  ipcMain.on("create-project-in-dir", (event, arg) => {
+    try {
+      const { path, projectTitle, projectDescription } = arg as {
+        [k: string]: string;
+      };
+      const id = randomUUID();
+
+      const config: Config | false = getConfigData();
+      if (config) {
+        const checkIfPathAlreadyExists = config.projectFiles.filter(
+          (project) => project.path === path,
+        );
+        if (checkIfPathAlreadyExists.length > 0) {
+          event.reply("create-error", "Project path already exists");
+          return;
+        }
+
+        const data: ProjectFile = {
+          id,
+          path,
+          title: projectTitle,
+          description: projectDescription,
+          dateModified: new Date(),
+        };
+        config.projectFiles.push(data);
+
+        const updateConfig = saveConfigData(config);
+        if (updateConfig) {
+          // TODO: Create .yml file in the path dir
+        } else {
+          event.reply("error-create", "Error creating project");
+        }
+      }
+    } catch (err) {}
   });
 }

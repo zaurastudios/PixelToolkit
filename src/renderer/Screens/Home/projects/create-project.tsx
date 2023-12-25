@@ -1,10 +1,8 @@
 import * as Card from "@/components/ui/card";
 import { Plus } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import * as Drawer from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import NewProjectContent from "./new-project";
 
@@ -65,8 +63,17 @@ export default function CreateProject() {
   function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    console.log(formData.get("project"));
-    console.log(formData.get("dir-path"));
+    if (path) {
+      const projectTitle = formData.get("project")!;
+      const projectDescription = formData.get("description") ?? "";
+
+      const data = {
+        path,
+        projectTitle,
+        projectDescription,
+      };
+      window.electron.ipcRenderer.sendMessage("create-project-in-dir", data);
+    }
   }
 
   return (

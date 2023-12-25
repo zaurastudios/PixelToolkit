@@ -119,8 +119,8 @@ const createWindow = async () => {
   new AppUpdater();
 
   try {
-    console.log(chalk.green("Init events"));
     AllEvents(mainWindow);
+    console.log(chalk.green("Init events"));
   } catch (err) {
     console.error(err);
   }

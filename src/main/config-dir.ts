@@ -55,3 +55,43 @@ export function createConfigDir() {
     return err;
   }
 }
+
+export function getConfigData() {
+  try {
+    const configDirPath = getConfigDirPath();
+    const configFilePath = path.join(configDirPath, "config.json");
+
+    const rawConfig = fs.readFileSync(configFilePath, "utf8");
+
+    const config = JSON.parse(rawConfig);
+    return config;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+
+export function saveConfigData(config: Config) {
+  try {
+    const configDirPath = getConfigDirPath();
+    const configFilePath = path.join(configDirPath, "config.json");
+
+    fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2));
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
+export interface Config {
+  projectFiles: ProjectFile[];
+}
+
+export interface ProjectFile {
+  id: string;
+  path: string;
+  title: string;
+  description: string;
+  dateModified: Date;
+}
