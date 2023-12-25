@@ -14,24 +14,34 @@ export default function NewProjectContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col gap-4"
+        className="flex flex-col mt-4 gap-4"
       >
-        <div className="grid w-full max-w-sm items-center gap-1.5">
-          <Label aria-required htmlFor="project">
-            Project Name{" "}
-            <span className="text-red-500" aria-hidden>
-              *
-            </span>
-          </Label>
-          <Input
-            type="text"
-            name="project"
-            placeholder="My Amazing Project"
-            required
-            onChange={(e) => setTitle(e.target.value)}
-          />
+        <div className="flex gap-4">
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label aria-required htmlFor="project">
+              Project Name{" "}
+              <span className="text-red-500" aria-hidden>
+                *
+              </span>
+            </Label>
+            <Input
+              type="text"
+              name="project"
+              placeholder="My Amazing Project"
+              required
+            />
+          </div>
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label aria-required htmlFor="description">
+              Project Description{" "}
+            </Label>
+            <Input
+              type="text"
+              name="description"
+              placeholder="My amazing project description"
+            />
+          </div>
         </div>
-
         <Button className="w-max" type="submit">
           Create
         </Button>

@@ -15,6 +15,8 @@ import log from "electron-log";
 import MenuBuilder from "./menu";
 import { resolveHtmlPath } from "./util";
 import AllEvents from "./ipc-events";
+import { createConfigDir } from "./config-dir";
+import chalk from "chalk";
 
 class AppUpdater {
   constructor() {
@@ -116,7 +118,12 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 
-  AllEvents(mainWindow);
+  try {
+    console.log(chalk.green("Init events"));
+    AllEvents(mainWindow);
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 /**
@@ -143,5 +150,6 @@ app
   })
   .catch(console.log);
 
-// Close app event
-ipcMain.on("close-app", () => app.quit());
+// Creating the config dir
+const configDir = createConfigDir();
+console.log("Created config", configDir);
