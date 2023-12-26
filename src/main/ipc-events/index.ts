@@ -6,7 +6,11 @@ export default function AllEvents(mainWindow: BrowserWindow | null) {
   if (mainWindow) {
     CreateEventsHandlers(mainWindow);
     ProjectEventsHandler(mainWindow);
+
     // Close app event
     ipcMain.on("close-app", () => app.quit());
+
+    // Setting the title
+    ipcMain.on("set-title", (event, title) => mainWindow.setTitle(title));
   }
 }

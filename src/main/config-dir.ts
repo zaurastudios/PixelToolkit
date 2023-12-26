@@ -56,7 +56,7 @@ export function createConfigDir() {
   }
 }
 
-export function getConfigData() {
+export function getConfigData(): Config | false {
   try {
     const configDirPath = getConfigDirPath();
     const configFilePath = path.join(configDirPath, "config.json");
@@ -78,6 +78,22 @@ export function saveConfigData(config: Config) {
 
     fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2));
     return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
+export function getProjectData(id: string): ProjectFile | false {
+  try {
+    const config = getConfigData();
+    if (config) {
+      const { projectFiles } = config;
+      const project = projectFiles.filter((file) => file.id === id)[0];
+      return project;
+    }
+
+    throw new Error("No project found");
   } catch (err) {
     console.error(err);
     return false;

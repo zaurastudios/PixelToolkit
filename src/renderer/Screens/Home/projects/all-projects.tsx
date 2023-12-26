@@ -31,8 +31,9 @@ export default function AllProjects() {
       key={project.id}
       whileTap={whileTap}
       to={"/" + project.id}
+      className="rounded-lg w-full flex"
     >
-      <Card.Card className="cursor-pointer hover:bg-foreground/5 transition-colors flex flex-col h-24">
+      <Card.Card className="cursor-pointer w-full hover:bg-foreground/5 transition-colors flex flex-col h-24">
         <Card.CardHeader className="flex flex-col justify-center grow">
           <Card.CardTitle className="flex items-center gap-2 text-lg font-medium">
             {project.name}
