@@ -6,6 +6,12 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
     ipcMain.on("get-my-projects", (event) => {
       const config = getConfigData();
       if (config) {
+        config.projectFiles.sort(
+          (a, b) =>
+            new Date(b.dateModified).getTime() -
+            new Date(a.dateModified).getTime(),
+        );
+
         event.reply("my-projects", config);
       }
     });
