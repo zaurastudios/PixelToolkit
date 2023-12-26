@@ -19,3 +19,14 @@ Present in `src/main/ipc-events/create.ts`
   - **Replies:**
     - `error-create`: If an error occurs while trying to create the project dir, it returns with the error message.
     - `created`: If successful returns the project id, so that user can be navigated to that page (`/:id`).
+
+## Project Events
+
+Present in `src/main/ipc-events/project.ts`
+
+- `get-my-projects`: Used for fetching the config data from the app's `config.json` file.
+  - **Replies:**
+    - `my-projects`: Returns the config data.
+- `get-my-project-with-id`: Accepts an id. Fetches the project file data from the app's `config.json` and then filters with id.
+  - **Replies:**
+    - `project-data-reply`: Returns false if no project file with that id is found, else returns the project data if found

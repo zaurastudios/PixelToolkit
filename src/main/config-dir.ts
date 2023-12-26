@@ -89,8 +89,11 @@ export function getProjectData(id: string): ProjectFile | false {
     const config = getConfigData();
     if (config) {
       const { projectFiles } = config;
-      const project = projectFiles.filter((file) => file.id === id)[0];
-      return project;
+      const project = projectFiles.filter((file) => file.id === id);
+
+      if (project.length > 0) {
+        return project[0];
+      }
     }
 
     throw new Error("No project found");
