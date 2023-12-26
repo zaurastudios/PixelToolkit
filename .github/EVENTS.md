@@ -1,13 +1,13 @@
 ## Main Events
 
-Present in: `src/main/ipc-events/index.ts`
+Present in: [`src/main/ipc-events/index.ts`](src/main/ipc-events/index.ts)
 
 - `close-app`: Calls `app.quit()` and closes the close-app.
 - `set-title`: Takes an id argument and sets the window title.
 
 ## Create Project Events
 
-Present in `src/main/ipc-events/create.ts`
+Present in [`src/main/ipc-events/create.ts`](src/main/ipc-events/create.ts)
 
 - `open-directory`: Opens the dialog for choosing directory for project files.
   - **Replies:**
@@ -22,7 +22,7 @@ Present in `src/main/ipc-events/create.ts`
 
 ## Project Events
 
-Present in `src/main/ipc-events/project.ts`
+Present in [`src/main/ipc-events/project.ts`](src/main/ipc-events/project.ts)
 
 - `get-my-projects`: Used for fetching the config data from the app's `config.json` file.
   - **Replies:**
