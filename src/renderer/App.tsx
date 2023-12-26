@@ -3,7 +3,7 @@ import "./App.css";
 import MenuBar from "./components/menu-bar";
 
 import Home from "./Screens/Home";
-import Test from "./Screens/test";
+import Project from "./Screens/Project";
 
 export default function App() {
   return (
@@ -11,7 +11,7 @@ export default function App() {
       <MenuBar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/test" element={<Test />} />
+        <Route path="/:id" element={<Project />} />
       </Routes>
     </Router>
   );

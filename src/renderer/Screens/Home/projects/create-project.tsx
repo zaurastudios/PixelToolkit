@@ -16,7 +16,7 @@ interface OpenedProps {
 export default function CreateProject() {
   const { toast } = useToast();
 
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const [path, setPath] = useState<string>("");
   const [ymlPath, setYmlPath] = useState<string>("");
@@ -100,9 +100,9 @@ export default function CreateProject() {
       <Drawer.DrawerTrigger asChild>
         <MotionCardComponent
           whileTap={whileTap}
-          className="cursor-pointer hover:bg-foreground/5 transition-colors"
+          className="cursor-pointer flex flex-col h-24 hover:bg-foreground/5 transition-colors"
         >
-          <Card.CardHeader>
+          <Card.CardHeader className="flex flex-col grow justify-center">
             <Card.CardTitle className="flex items-center gap-2 text-lg font-medium">
               <Plus height={20} /> Create new project
             </Card.CardTitle>
