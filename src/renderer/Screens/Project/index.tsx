@@ -18,6 +18,10 @@ export default function Project() {
       } else {
         setProjectFile(reply);
         setLoading(false);
+        window.electron.ipcRenderer.sendMessage(
+          "set-title",
+          `${reply.name} | PixelToolkit`,
+        );
       }
     });
   }, []);

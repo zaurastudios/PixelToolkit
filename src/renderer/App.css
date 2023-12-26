@@ -75,3 +75,8 @@
     @apply bg-background text-foreground min-h-screen;
   }
 }
+
+/* Random div appears at the very end, no clue why */
+#projects-container > div:nth-last-child(1) {
+  display: none;
+}

@@ -2,6 +2,8 @@ import * as Card from "@/components/ui/card";
 import Projects from "./projects";
 
 export default function Home() {
+  window.electron.ipcRenderer.sendMessage("set-title", "PixelToolkit");
+
   return (
     <main>
       <section className="p-4">
