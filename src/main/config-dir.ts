@@ -92,6 +92,16 @@ export function getProjectData(id: string): ProjectFile | false {
       const project = projectFiles.filter((file) => file.id === id);
 
       if (project.length > 0) {
+        const updatedProject = project[0];
+        updatedProject.dateModified = new Date();
+
+        const newConfig = config;
+        newConfig.projectFiles = newConfig.projectFiles.filter(
+          (file) => file.id !== id,
+        );
+        newConfig.projectFiles.push(updatedProject);
+        saveConfigData(newConfig);
+
         return project[0];
       }
     }

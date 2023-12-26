@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain } from "electron";
-import { Config, getConfigData, getProjectData } from "../config-dir";
+import { getConfigData, getProjectData } from "../config-dir";
 
 export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
   try {
