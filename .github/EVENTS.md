@@ -1,8 +1,21 @@
-# All the custom events I've created and am using
-
 ## Main Events
 
 Present in: `src/main/ipc-events/index.ts`
 
-- `close-app`: Calls `app.quit()` and closes the close-app
-- `set-title`: Takes a id argument and sets the window title
+- `close-app`: Calls `app.quit()` and closes the close-app.
+- `set-title`: Takes an id argument and sets the window title.
+
+## Create Project Events
+
+Present in `src/main/ipc-events/create.ts`
+
+- `open-directory`: Opens the dialog for choosing directory for project files.
+  - **Replies:**
+    - `opened-directory`: Returns if cancelled or not, path to dir (if not cancelled) and if selected dir is empty (if not cancelled)
+- `open-yml`: This is for selecting a pre-existing project.
+  - **Replies:**
+    - `opened-yml`: As of now just returns dir data (cancelled, filePaths).
+- `create-project-in-dir`: Accepts project title (name), project description and project path in an object. Tries creating the default folder paths `/assets/minecraft/textures/block` and a `project.yml` file in the provided path. Then saves these info with a generated UUID in the app's `config.json` file.
+  - **Replies:**
+    - `error-create`: If an error occurs while trying to create the project dir, it returns with the error message.
+    - `created`: If successful returns the project id, so that user can be navigated to that page (`/:id`).
