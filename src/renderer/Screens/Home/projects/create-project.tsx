@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import NewProjectContent from "./new-project";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface OpenedProps {
   canceled: boolean;
@@ -15,6 +16,7 @@ interface OpenedProps {
 
 export default function CreateProject() {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
 
@@ -80,6 +82,12 @@ export default function CreateProject() {
       window.electron.ipcRenderer.sendMessage("create-project-in-dir", data);
     }
   }
+
+  // Handling create success
+  window.electron.ipcRenderer.on("created", (arg) => {
+    const { id } = arg as { id: string };
+    navigate(("/" + id) as string);
+  });
 
   // Handling create errors
   window.electron.ipcRenderer.on("error-create", (event) => {
