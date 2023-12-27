@@ -7,6 +7,7 @@ import { useState } from "react";
 import NewProjectContent from "./new-project";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import SelectProject from "./select-project";
 
 interface OpenedProps {
   canceled: boolean;
@@ -185,7 +186,7 @@ export default function CreateProject() {
             </div>
 
             {path && <NewProjectContent />}
-            {ymlPath && <h1>fNice</h1>}
+            {ymlPath && <SelectProject ymlPath={ymlPath} />}
           </form>
         </div>
       </Drawer.DrawerContent>
