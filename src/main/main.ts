@@ -9,14 +9,14 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from "path";
-import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, shell, ipcMain, protocol, net } from "electron";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
+import chalk from "chalk";
 import MenuBuilder from "./menu";
 import { resolveHtmlPath } from "./util";
 import AllEvents from "./ipc-events";
 import { createConfigDir } from "./config-dir";
-import chalk from "chalk";
 
 class AppUpdater {
   constructor() {
@@ -147,6 +147,11 @@ app
       // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
     });
+
+    // To fetch local resources, i.e images etc from file://
+    protocol.handle("atom", (req) =>
+      net.fetch(`file://${req.url.slice("atom://".length)}`),
+    );
   })
   .catch(console.log);
 

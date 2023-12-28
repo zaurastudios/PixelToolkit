@@ -118,7 +118,7 @@ export default function CreateProject() {
       <Drawer.DrawerTrigger asChild>
         <MotionCardComponent
           whileTap={whileTap}
-          className="cursor-pointer flex flex-col h-24 hover:bg-foreground/5 transition-colors"
+          className="cursor-pointer flex flex-col h-28 hover:bg-foreground/5 transition-colors"
         >
           <Card.CardHeader className="flex flex-col grow justify-center">
             <Card.CardTitle className="flex items-center gap-2 text-lg font-medium">

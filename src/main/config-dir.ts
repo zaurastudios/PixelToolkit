@@ -4,10 +4,22 @@ import { homedir } from "os";
 
 const homeDir = homedir();
 
+export interface ProjectFile {
+  id: string;
+  path: string;
+  name: string;
+  description: string;
+  dateModified: Date;
+  packPng?: string;
+}
+export interface Config {
+  projectFiles: ProjectFile[];
+}
+
 function getConfigDirPath() {
   let configDirPath;
 
-  const platform = process.platform;
+  const { platform } = process;
   switch (platform) {
     case "win32":
       configDirPath = path.join(
@@ -111,16 +123,4 @@ export function getProjectData(id: string): ProjectFile | false {
     console.error(err);
     return false;
   }
-}
-
-export interface Config {
-  projectFiles: ProjectFile[];
-}
-
-export interface ProjectFile {
-  id: string;
-  path: string;
-  name: string;
-  description: string;
-  dateModified: Date;
 }
