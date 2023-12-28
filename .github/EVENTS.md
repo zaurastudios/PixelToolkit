@@ -19,9 +19,9 @@ Present in [`src/main/ipc-events/create.ts`](/src/main/ipc-events/create.ts)
   - **Replies:**
     - `error-create`: If an error occurs while trying to create the project dir, it returns with the error message.
     - `created`: If successful returns the project id, so that user can be navigated to that page (`/:id`).
-- `selected-path-in-dir`: Checks if the passed path arg is present in the app's `config.json` file.
+- `selected-path-in-config`: Checks if the passed path arg is present in the app's `config.json` file.
   - **Replies:**
-    - `selected-path-is-in-dir`: Returns boolean.
+    - `selected-path-is-in-config`: Verifies the yml and returns {boolean, message}.
 
 ## Project Events
 

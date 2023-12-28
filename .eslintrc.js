@@ -14,7 +14,6 @@ module.exports = {
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "error",
     "jsx-quotes": [2, "prefer-double"],
-    "react/jsx-props-no-spreading": false,
   },
 
   parserOptions: {

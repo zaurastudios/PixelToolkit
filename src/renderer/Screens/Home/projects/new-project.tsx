@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function NewProjectContent() {

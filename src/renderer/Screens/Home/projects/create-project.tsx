@@ -3,10 +3,10 @@ import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import * as Drawer from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import NewProjectContent from "./new-project";
+import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import NewProjectContent from "./new-project";
 import SelectProject from "./select-project";
 
 interface OpenedProps {
@@ -71,10 +71,19 @@ export default function CreateProject() {
   function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    if (path) {
-      const projectTitle = formData.get("project")!;
-      const projectDescription = formData.get("description") ?? "";
+    const projectTitle = formData.get("project")!;
+    const projectDescription = formData.get("description") ?? "";
 
+    if (ymlPath) {
+      const data = {
+        ymlPath,
+        projectTitle,
+        projectDescription,
+      };
+      window.electron.ipcRenderer.sendMessage("add-existing-project", data);
+    }
+
+    if (path) {
       const data = {
         path,
         projectTitle,
@@ -87,7 +96,7 @@ export default function CreateProject() {
   // Handling create success
   window.electron.ipcRenderer.on("created", (arg) => {
     const { id } = arg as { id: string };
-    navigate(("/" + id) as string);
+    navigate(`/${id}` as string);
   });
 
   // Handling create errors
@@ -129,7 +138,7 @@ export default function CreateProject() {
         </Drawer.DrawerHeader>
 
         <div className="p-4">
-          <form onSubmit={submitHandler} className="mt-2 flex flex-col gap-4">
+          <form onSubmit={submitHandler} className=" flex mt-2 flex-col gap-4">
             <div className="flex items-center gap-4">
               <div className="flex gap-2 items-center">
                 <Button
@@ -163,6 +172,7 @@ export default function CreateProject() {
                 <code id="dir-path" className="text-sm text-foreground/80">
                   <em>{path}</em>
                   <input
+                    type="text"
                     className="hidden"
                     readOnly
                     name="dir-path"
@@ -175,6 +185,7 @@ export default function CreateProject() {
                 <code id="yml-path" className="text-sm text-foreground/80">
                   <em>{ymlPath}</em>
                   <input
+                    type="text"
                     className="hidden"
                     name="yml-path"
                     value={ymlPath}
@@ -184,7 +195,6 @@ export default function CreateProject() {
                 </code>
               )}
             </div>
-
             {path && <NewProjectContent />}
             {ymlPath && <SelectProject ymlPath={ymlPath} />}
           </form>
