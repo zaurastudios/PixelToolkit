@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, shell } from "electron";
 import { getConfigData, getProjectData } from "../config-dir";
 
 export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
@@ -24,6 +24,11 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
       }
 
       event.reply("project-data-reply", projectFile);
+    });
+
+    ipcMain.on("open-in-folder", async (event, shellPath) => {
+      const data = await shell.openPath(shellPath);
+      console.log(typeof data);
     });
   } catch (err) {
     console.error(err);
