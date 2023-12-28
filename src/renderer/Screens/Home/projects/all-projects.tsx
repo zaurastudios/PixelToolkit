@@ -25,6 +25,7 @@ export default function AllProjects() {
   }
 
   if (projects.length === 0) return null;
+  console.log(projects);
 
   return projects.map((project) => (
     <MotionLinkComponent

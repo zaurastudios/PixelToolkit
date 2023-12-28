@@ -1,5 +1,4 @@
 import { BrowserWindow, ipcMain } from "electron";
-import fs from "fs";
 import { getConfigData, getProjectData } from "../config-dir";
 
 export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
@@ -12,14 +11,6 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
             new Date(b.dateModified).getTime() -
             new Date(a.dateModified).getTime(),
         );
-        config.projectFiles.map((project) => {
-          if (fs.existsSync(`${project.path}/pack.png`)) {
-            project.packPng = `${project.path}/pack.png`;
-            return project;
-          }
-
-          return project;
-        });
 
         event.reply("my-projects", config);
       }

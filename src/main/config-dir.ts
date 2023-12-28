@@ -75,7 +75,23 @@ export function getConfigData(): Config | false {
 
     const rawConfig = fs.readFileSync(configFilePath, "utf8");
 
-    const config = JSON.parse(rawConfig);
+    const config: Config = JSON.parse(rawConfig);
+    // Remove project if path doesn't resolve
+    config.projectFiles = config.projectFiles.filter((project) =>
+      fs.existsSync(project.path),
+    );
+    // If path contains a pack.png, add it to config
+    config.projectFiles.map((project) => {
+      if (fs.existsSync(`${project.path}/pack.png`)) {
+        project.packPng = `${project.path}/pack.png`;
+        return project;
+      }
+
+      return project;
+    });
+
+    saveConfigData(config);
+
     return config;
   } catch (err) {
     console.log(err);
@@ -122,5 +138,19 @@ export function getProjectData(id: string): ProjectFile | false {
   } catch (err) {
     console.error(err);
     return false;
+  }
+}
+
+export function removeProject(id: string) {
+  try {
+    const config = getConfigData();
+    if (config) {
+      config.projectFiles = config.projectFiles.filter(
+        (project) => project.id !== id,
+      );
+      saveConfigData(config);
+    }
+  } catch (err) {
+    console.error(err);
   }
 }
