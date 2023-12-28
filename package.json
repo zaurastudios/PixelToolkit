@@ -239,10 +239,7 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "snap",
-        "deb",
-        "rpm"
+        "deb"
       ],
       "category": "Development"
     },
