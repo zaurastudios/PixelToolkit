@@ -7,6 +7,8 @@ import { Button } from "../ui/button";
 export function FileTreeFolder(props: { fileTree: FileTreeProps }) {
   const { fileTree } = props;
 
+  const [query, setQuery] = useState("amethyst");
+
   return (
     <div className="p-2">
       {fileTree.children?.map((entry) => (
