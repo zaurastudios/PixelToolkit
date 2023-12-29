@@ -1,5 +1,42 @@
 import { BrowserWindow, ipcMain, shell } from "electron";
+import path from "path";
+import fs from "fs";
 import { getConfigData, getProjectData, removeProject } from "../config-dir";
+
+export interface FileTreeProps {
+  name: string;
+  isMat?: boolean;
+  children?: FileTreeProps[];
+}
+
+function treeBuilder(projectPath: string): FileTreeProps {
+  const files = fs.readdirSync(projectPath);
+  const node: FileTreeProps = {
+    name: path.basename(projectPath),
+    children: [],
+  };
+
+  files.forEach((file) => {
+    const filePath = path.join(projectPath, file);
+    const isDir = fs.statSync(filePath).isDirectory();
+
+    if (isDir) {
+      const children = treeBuilder(filePath);
+      node.children!.push(children);
+
+      // Check if dir contains a mat.yml file
+      const isMatDir = fs
+        .readdirSync(filePath)
+        .filter((f) => f.match(/^mat.*\.(yml|yaml)$/i));
+      if (isMatDir.length > 0) {
+        children.isMat = true;
+        children.children = [];
+      }
+    }
+  });
+
+  return node;
+}
 
 export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
   try {
@@ -42,11 +79,27 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
           toast: "Deleted project.",
         });
       } catch (err) {
-        console.err(err);
+        console.error(err);
         event.reply("deleted-project", {
           redirect: "/",
           toast: "Unable to delete.",
           error: true,
+        });
+      }
+    });
+
+    ipcMain.on("get-project-file-tree", (event, projectPath) => {
+      try {
+        const fileTree = treeBuilder(projectPath);
+        event.reply("project-file-tree", {
+          redirect: false,
+          fileTree,
+        });
+      } catch (err) {
+        console.error(err);
+        event.reply("project-file-tree", {
+          redirect: true,
+          message: "Failed to fetch file tree",
         });
       }
     });
