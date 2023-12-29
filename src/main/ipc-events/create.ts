@@ -195,12 +195,12 @@ export default function CreateEventsHandlers(mainWindow: BrowserWindow) {
 
         const updateConfig = saveConfigData(config);
         if (updateConfig) {
+          const ymlPathData = YAML.parse(fs.readFileSync(projectPath, "utf8"));
           const ymlPath = path.join(parentPath, "project.yml");
 
-          const doc: { [k: string]: any } = {};
-          doc.name = projectTitle;
-          doc.description = projectDescription;
-          fs.writeFileSync(ymlPath, YAML.stringify(doc), "utf8");
+          ymlPathData.name = projectTitle;
+          ymlPathData.description = projectDescription;
+          fs.writeFileSync(ymlPath, YAML.stringify(ymlPathData), "utf8");
 
           event.reply("created", { id });
         } else {
