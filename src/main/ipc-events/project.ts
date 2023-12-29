@@ -28,6 +28,14 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
 
     ipcMain.on("open-in-folder", async (event, shellPath) => {
       const data = await shell.openPath(shellPath);
+      try {
+        shell.beep();
+        shell.showItemInFolder(shellPath);
+        shell.showItemInFolder(`${shellPath}/project.yml`);
+        console.log("open");
+      } catch (err) {
+        console.error(err);
+      }
       console.log(typeof data);
     });
   } catch (err) {

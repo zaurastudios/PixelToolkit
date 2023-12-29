@@ -1,5 +1,6 @@
 {
-  "description": "A foundation for scalable desktop apps",
+  "version": "0.1.0",
+  "description": "Compile textures to Minecraft formats",
   "keywords": [
     "electron",
     "boilerplate",
@@ -11,27 +12,20 @@
     "hot",
     "reload"
   ],
-  "homepage": "https://github.com/electron-react-boilerplate/electron-react-boilerplate#readme",
+  "homepage": "https://github.com/zoclhas/PixelToolkit",
   "bugs": {
-    "url": "https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues"
+    "url": "https://github.com/zoclhas/PixelToolkit/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "git+https://github.com/zoclhas/PixelToolkit/PixelToolkit.git"
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "Zoclhas",
+    "email": "hi@zoclhas.com",
+    "url": "https://zoch.dev"
   },
-  "contributors": [
-    {
-      "name": "Amila Welihinda",
-      "email": "amilajack@gmail.com",
-      "url": "https://github.com/amilajack"
-    }
-  ],
   "main": "./src/main/main.ts",
   "scripts": {
     "build": "concurrently \"npm run build:main\" \"npm run build:renderer\"",
@@ -194,8 +188,8 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "PixelToolkit",
+    "appId": "org.erb.PixelToolkit",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
@@ -253,12 +247,9 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
+      "owner": "zoclhas",
+      "repo": "https://github.com/zoclhas/PixelToolkit"
     }
-  },
-  "collective": {
-    "url": "https://opencollective.com/electron-react-boilerplate-594"
   },
   "devEngines": {
     "node": ">=14.x",

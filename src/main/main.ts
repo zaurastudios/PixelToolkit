@@ -130,6 +130,7 @@ const createWindow = async () => {
  * Add event listeners...
  */
 
+app.setName("PixelToolkit");
 app.on("window-all-closed", () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
@@ -158,3 +159,6 @@ app
 // Creating the config dir
 const configDir = createConfigDir();
 console.log("Created config", configDir);
+
+shell.openPath("/home/zoc/Desktop/Amulet/");
+shell.showItemInFolder("/home/zoc/Desktop/Amulet/");
