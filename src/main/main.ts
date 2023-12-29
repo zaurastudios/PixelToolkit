@@ -159,6 +159,3 @@ app
 // Creating the config dir
 const configDir = createConfigDir();
 console.log("Created config", configDir);
-
-shell.openPath("/home/zoc/Desktop/Amulet/");
-shell.showItemInFolder("/home/zoc/Desktop/Amulet/");
