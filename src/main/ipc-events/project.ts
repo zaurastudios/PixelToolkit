@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, shell } from "electron";
-import { getConfigData, getProjectData } from "../config-dir";
+import { getConfigData, getProjectData, removeProject } from "../config-dir";
 
 export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
   try {
@@ -26,12 +26,28 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
       event.reply("project-data-reply", projectFile);
     });
 
-    ipcMain.on("open-in-folder", async (event, shellPath) => {
-      shell.openPath(shellPath);
+    ipcMain.on("open-in-folder", (event, shellPath) => {
       try {
         shell.openPath(shellPath);
       } catch (err) {
         console.error(err);
+      }
+    });
+
+    ipcMain.on("delete-project", (event, id) => {
+      try {
+        removeProject(id);
+        event.reply("deleted-project", {
+          redirect: "/",
+          toast: "Deleted project.",
+        });
+      } catch (err) {
+        console.err(err);
+        event.reply("deleted-project", {
+          redirect: "/",
+          toast: "Unable to delete.",
+          error: true,
+        });
       }
     });
   } catch (err) {

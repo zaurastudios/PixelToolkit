@@ -1,23 +1,30 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import * as Card from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import * as Dropdown from "@/components/ui/dropdown-menu";
 import { Eye, FolderOpen, MoreHorizontal, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Config, ProjectFile } from "../../../../main/config-dir";
 
 export default function AllProjects() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<ProjectFile[]>([]);
   useEffect(() => {
-    window.electron.ipcRenderer.sendMessage("get-my-projects");
-    window.electron.ipcRenderer.on("my-projects", (config) => {
-      const { projectFiles } = config as Config;
-      setProjects(projectFiles);
-      setLoading(false);
-    });
-  }, []);
+    setLoading(true);
+    if (location.pathname === "/") {
+      window.electron.ipcRenderer.sendMessage("get-my-projects");
+      window.electron.ipcRenderer.on("my-projects", (config) => {
+        const { projectFiles } = config as Config;
+        setProjects(projectFiles);
+        setLoading(false);
+      });
+    }
+  }, [location]);
 
   const whileTap = { scale: 0.9 };
   const MotionLinkComponent = motion(Link);
@@ -31,6 +38,29 @@ export default function AllProjects() {
   function openInFolder(path: string) {
     window.electron.ipcRenderer.sendMessage("open-in-folder", path);
   }
+
+  function deleteProject(id: string) {
+    window.electron.ipcRenderer.sendMessage("delete-project", id);
+  }
+
+  window.electron.ipcRenderer.on("deleted-project", (props) => {
+    /* eslint-disable */
+    const {
+      redirect,
+      toast: message,
+      error,
+    } = props as {
+      redirect: string;
+      toast: string;
+      error?: boolean;
+    };
+    /* eslint-enable */
+
+    toast(error ? "Error" : "Success", {
+      description: message,
+    });
+    navigate(redirect);
+  });
 
   return projects.map((project) => (
     <div key={project.id} className="relative">
@@ -73,7 +103,7 @@ export default function AllProjects() {
           <MoreHorizontal />
         </Dropdown.DropdownMenuTrigger>
 
-        <Dropdown.DropdownMenuContent sideOffset={-1}>
+        <Dropdown.DropdownMenuContent className="w-[200px]" sideOffset={-1}>
           <Dropdown.DropdownMenuItem
             className="cursor-pointer text-base"
             asChild
@@ -90,10 +120,28 @@ export default function AllProjects() {
             <FolderOpen className="mr-2 size-5" />
             <span>Open in Folder</span>
           </Dropdown.DropdownMenuItem>
-          <Dropdown.DropdownMenuItem className="cursor-pointer text-red-500 text-base">
-            <Trash2 className="mr-2 size-5" />
-            <span>Delete Project</span>
-          </Dropdown.DropdownMenuItem>
+          <Dropdown.DropdownMenuSub>
+            <Dropdown.DropdownMenuSubTrigger className="cursor-pointer text-base">
+              <Trash2 className="mr-2 size-5 text-red-600" />
+              <span className="text-red-500">Delete Project</span>
+            </Dropdown.DropdownMenuSubTrigger>
+
+            <Dropdown.DropdownMenuPortal>
+              <Dropdown.DropdownMenuSubContent>
+                <Dropdown.DropdownMenuLabel>
+                  Are you absolutly sure?
+                </Dropdown.DropdownMenuLabel>
+                <Dropdown.DropdownMenuSeparator />
+                <Dropdown.DropdownMenuItem
+                  className="cursor-pointer text-red-500 text-base"
+                  onClick={() => deleteProject(project.id)}
+                >
+                  <Trash2 className="mr-2 size-5" />
+                  <span>Yes</span>
+                </Dropdown.DropdownMenuItem>
+              </Dropdown.DropdownMenuSubContent>
+            </Dropdown.DropdownMenuPortal>
+          </Dropdown.DropdownMenuSub>
         </Dropdown.DropdownMenuContent>
       </Dropdown.DropdownMenu>
     </div>
