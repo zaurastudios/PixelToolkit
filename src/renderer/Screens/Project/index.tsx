@@ -4,6 +4,7 @@ import * as Resizable from "@/components/ui/resizable";
 import { useToast } from "@/components/ui/use-toast";
 import { ProjectFile } from "../../../main/config-dir";
 import { FileTreeProps } from "../../../main/ipc-events/project";
+import Sidebar from "./sidebar";
 
 type FileTreeReply =
   | { redirect: false; fileTree: FileTreeProps }
@@ -17,7 +18,6 @@ export default function Project() {
   const [loading, setLoading] = useState(true);
   const [projectFile, setProjectFile] = useState<ProjectFile>();
   const [fileTree, setFileTree] = useState<FileTreeProps>();
-  console.log(fileTree);
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage("get-project-data-with-id", id!);
@@ -66,10 +66,13 @@ export default function Project() {
           direction="horizontal"
           className="rounded-xl border bg-card shadow-sm text-card-foreground"
         >
-          <Resizable.ResizablePanel minSize={15} defaultSize={15} maxSize={20}>
-            <div className="flex h-[200px] items-center justify-center p-6">
-              <span className="font-semibold">One</span>
-            </div>
+          <Resizable.ResizablePanel
+            minSize={15}
+            defaultSize={15}
+            maxSize={20}
+            className="!overflow-scroll"
+          >
+            {fileTree?.name && <Sidebar fileTree={fileTree} />}
           </Resizable.ResizablePanel>
           <Resizable.ResizableHandle withHandle />
           <Resizable.ResizablePanel>

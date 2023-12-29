@@ -9,6 +9,15 @@ export interface FileTreeProps {
   children?: FileTreeProps[];
 }
 
+const unlistedDirs = [
+  "blockstates",
+  "models",
+  "texts",
+  "shaders",
+  "lang",
+  "font",
+  "atlases",
+];
 function treeBuilder(projectPath: string): FileTreeProps {
   const files = fs.readdirSync(projectPath);
   const node: FileTreeProps = {
@@ -22,7 +31,9 @@ function treeBuilder(projectPath: string): FileTreeProps {
 
     if (isDir) {
       const children = treeBuilder(filePath);
-      node.children!.push(children);
+      if (!unlistedDirs.includes(children.name.toLowerCase())) {
+        node.children!.push(children);
+      }
 
       // Check if dir contains a mat.yml file
       const isMatDir = fs
