@@ -1,39 +1,58 @@
 import { FileTreeFolder } from "@/components/file-tree";
+import filterTree from "@/utils/filter-tree";
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 
 export default function Sidebar(props: { fileTree: FileTreeProps }) {
   const { fileTree } = props;
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState<string>("");
 
-  function filterTree(tree: FileTreeProps): FileTreeProps | undefined {
-    const filter =
-      tree.children &&
-      tree.children.length > 0 &&
-      (tree.children
-        .map((child) => filterTree(child))
-        .filter((child) => child !== undefined) as FileTreeProps[]);
-
-    const compareQueryAndName =
-      tree.name.toLowerCase().includes(query.toLowerCase()) ||
-      query.toLowerCase().includes(tree.name.toLowerCase());
-    if (tree.isMat && compareQueryAndName) {
-      return tree;
+  function modifiedFileTree(): FileTreeProps {
+    if (query) {
+      const filteredTree = filterTree(fileTree, query);
+      if (filteredTree) {
+        return filteredTree;
+      }
     }
 
-    if (!tree.isMat && tree.name !== query && filter && filter.length > 0) {
-      return { name: tree.name, children: filter };
-    }
+    return fileTree;
+  }
 
-    return undefined;
+  function submitHandler(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const searchQuery = formData.get("search")! as string;
+    setQuery(searchQuery);
   }
 
   return (
-    <div className="">
-      <FileTreeFolder fileTree={fileTree} />
+    <>
+      <form
+        className="sticky bg-background z-20 rounded-b-xl shadow-sm w-full left-0 top-0 p-2 flex"
+        onSubmit={submitHandler}
+      >
+        <div className="flex w-full items-center gap-2">
+          <Input
+            type="text"
+            placeholder="Search..."
+            name="search"
+            className="grow max-w-none min-w-none w-auto"
+          />
+          <Button size="icon">
+            <Search className="size-4" />
+          </Button>
+        </div>
+      </form>
+
+      <FileTreeFolder fileTree={modifiedFileTree()} query={query} />
 
       <div />
       <div />
-    </div>
+    </>
   );
 }

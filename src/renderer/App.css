@@ -83,7 +83,7 @@
 
 ::-webkit-scrollbar {
   width: 0px;
-  background: transparent;
+  background: hsl(var(--foreground) / 0.025);
   width: 8px;
   height: 8px;
 }
@@ -96,5 +96,5 @@
   background-color: hsl(240 3.7% 30%);
 }
 ::-webkit-scrollbar-corner {
-  background-color: transparent;
+  background: hsl(var(--foreground) / 0.025);
 }

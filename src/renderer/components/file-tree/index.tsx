@@ -1,31 +1,36 @@
 import { useState } from "react";
 import { ChevronRight, Paintbrush } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
-import similarity from "@/utils/similarity";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 import { Button } from "../ui/button";
 
-export function FileTreeFolder(props: { fileTree: FileTreeProps }) {
-  const { fileTree } = props;
+export function FileTreeFolder(props: {
+  fileTree: FileTreeProps;
+  query: string;
+}) {
+  const { fileTree, query } = props;
 
   return (
     <div className="p-2">
       {fileTree.children?.map((entry) => (
         // eslint-disable-next-line
-        <Entry key={uuidv4()} entry={entry} depth={1} />
+        <Entry key={uuidv4()} entry={entry} depth={1} query={query} />
       ))}
     </div>
   );
 }
 
-// Article referred to: https://blog.stackademic.com/creating-a-folder-tree-view-component-with-react-and-typescript-d3df2086878e
+// Article referred: https://blog.stackademic.com/creating-a-folder-tree-view-component-with-react-and-typescript-d3df2086878e
 type EntryProps = {
   entry: FileTreeProps;
   depth: number;
+  query: string;
 };
 
-export function Entry({ entry, depth }: EntryProps) {
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+export function Entry({ entry, depth, query }: EntryProps) {
+  const [isExpanded, setIsExpanded] = useState<boolean>(
+    query.length > 2 && !entry.isMat,
+  );
 
   return (
     <>
@@ -53,7 +58,7 @@ export function Entry({ entry, depth }: EntryProps) {
           <div className="ml-1">
             {" "}
             {entry.children?.map((e) => (
-              <Entry key={uuidv4()} entry={e} depth={depth + 1} />
+              <Entry key={uuidv4()} entry={e} depth={depth + 1} query={query} />
             ))}
           </div>
         )}
