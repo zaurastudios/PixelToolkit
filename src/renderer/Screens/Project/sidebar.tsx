@@ -57,9 +57,13 @@ export default function Sidebar(props: { fileTree: FileTreeProps }) {
 
       <FileTreeFolder fileTree={modifiedFileTree()} query={query} />
 
-      {pathToTexture && (
-        <code className="fixed bottom-0 left-4 bg-background text-xs">
+      {pathToTexture ? (
+        <code className="shadow-xs fixed bottom-2 left-4 flex select-none items-center rounded-xl border bg-background p-2 text-xs">
           {pathToTexture}
+        </code>
+      ) : (
+        <code className="shadow-xs fixed bottom-2 left-4 flex select-none items-center rounded-xl border bg-background p-2 text-xs">
+          (None Selected)
         </code>
       )}
       <div />

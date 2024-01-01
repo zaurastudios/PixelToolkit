@@ -61,7 +61,7 @@ export default function Project() {
 
   if (projectFile && projectFile.id) {
     return (
-      <div className="h-[calc(100vh-56px)] p-4">
+      <div className="h-[calc(100vh-56px-32px)] p-4">
         <Resizable.ResizablePanelGroup
           direction="horizontal"
           className="rounded-xl border bg-card text-card-foreground shadow-sm"
@@ -74,7 +74,7 @@ export default function Project() {
           >
             {fileTree?.name && <Sidebar fileTree={fileTree} />}
           </Resizable.ResizablePanel>
-          <Resizable.ResizableHandle withHandle />
+          <Resizable.ResizableHandle />
           <Resizable.ResizablePanel>
             <div className="flex h-[200px] items-center justify-center p-6">
               <span className="font-semibold">Two</span>
