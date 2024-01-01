@@ -1,24 +1,23 @@
 import { ChevronRight, Paintbrush } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 import { Button } from "../ui/button";
 
-export function FileTreeFolder(props: {
-  fileTree: FileTreeProps;
-  query: string;
-}) {
-  const { fileTree, query } = props;
+export const FileTreeFolder = React.memo(
+  (props: { fileTree: FileTreeProps; query: string }) => {
+    const { fileTree, query } = props;
 
-  return (
-    <div className="p-2">
-      {fileTree.children?.map((entry) => (
-        // eslint-disable-next-line
-        <Entry key={uuidv4()} entry={entry} depth={1} query={query} path="" />
-      ))}
-    </div>
-  );
-}
+    return (
+      <div className="p-2">
+        {fileTree.children?.map((entry) => (
+          // eslint-disable-next-line
+          <Entry key={uuidv4()} entry={entry} depth={1} query={query} path="" />
+        ))}
+      </div>
+    );
+  },
+);
 
 // Article referred: https://blog.stackademic.com/creating-a-folder-tree-view-component-with-react-and-typescript-d3df2086878e
 type EntryProps = {
@@ -35,6 +34,10 @@ export function Entry({ entry, depth, query, path }: EntryProps) {
 
   const currentPath = `${path}/${entry.name}`;
 
+  function selectTexture() {
+    window.electron.ipcRenderer.sendMessage("select-texture", currentPath);
+  }
+
   return (
     <>
       <Button
@@ -42,13 +45,13 @@ export function Entry({ entry, depth, query, path }: EntryProps) {
           if (!entry.isMat) {
             setIsExpanded((prev) => !prev);
           } else {
-            //
+            selectTexture();
           }
         }}
         variant={isExpanded ? "secondary" : "ghost"}
         className="h-max px-2 py-2 pr-3 leading-3"
       >
-        {entry.isMat && <Paintbrush className="mr-2 size-4 opacity-50" />}
+        {entry.isMat && <Paintbrush className="size-4 mr-2 opacity-50" />}
         {!entry.isMat && entry.children && (
           <div>
             <ChevronRight

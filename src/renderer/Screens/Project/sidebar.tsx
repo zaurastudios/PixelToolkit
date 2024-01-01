@@ -9,6 +9,7 @@ import { FileTreeProps } from "../../../main/ipc-events/project";
 export default function Sidebar(props: { fileTree: FileTreeProps }) {
   const { fileTree } = props;
 
+  const [pathToTexture, setPathToTexture] = useState<string>();
   const [query, setQuery] = useState<string>("");
 
   function modifiedFileTree(): FileTreeProps {
@@ -29,6 +30,11 @@ export default function Sidebar(props: { fileTree: FileTreeProps }) {
     const searchQuery = formData.get("search")! as string;
     setQuery(searchQuery);
   }
+
+  // Setting selected texture path
+  window.electron.ipcRenderer.on("selected-texture", (arg) =>
+    setPathToTexture(arg as string),
+  );
 
   return (
     <>
@@ -51,7 +57,11 @@ export default function Sidebar(props: { fileTree: FileTreeProps }) {
 
       <FileTreeFolder fileTree={modifiedFileTree()} query={query} />
 
-      <div />
+      {pathToTexture && (
+        <code className="fixed bottom-0 left-4 bg-background text-xs">
+          {pathToTexture}
+        </code>
+      )}
       <div />
     </>
   );
