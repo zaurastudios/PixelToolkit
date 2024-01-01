@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import * as Card from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { Link, useLocation, useNavigate } from "react-router-dom";
 import * as Dropdown from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 import { Eye, FolderOpen, MoreHorizontal, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Config, ProjectFile } from "../../../../main/config-dir";
 
@@ -67,19 +67,19 @@ export default function AllProjects() {
       <MotionLinkComponent
         whileTap={whileTap}
         to={`/${project.id}`}
-        className="rounded-lg w-full flex"
+        className="flex w-full rounded-lg"
       >
-        <Card.Card className="cursor-pointer w-full hover:bg-foreground/5 transition-colors flex flex-col h-28">
+        <Card.Card className="flex h-28 w-full cursor-pointer flex-col transition-colors hover:bg-foreground/5">
           <div className="flex grow gap-4">
             {project.packPng && (
               <img
                 src={`atom://${project.packPng}`}
                 alt={`${project.name}'s pack.png'`}
-                className="aspect-square h-24 rounded-md shadow m-2 mr-0 w-24"
+                className="m-2 mr-0 aspect-square h-24 w-24 rounded-md shadow"
               />
             )}
             <Card.CardHeader
-              className={`flex flex-col justify-center grow ${
+              className={`flex grow flex-col justify-center ${
                 project.packPng && "pl-0"
               }`}
             >
@@ -99,7 +99,7 @@ export default function AllProjects() {
       </MotionLinkComponent>
 
       <Dropdown.DropdownMenu>
-        <Dropdown.DropdownMenuTrigger className="absolute top-2 right-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 z-10">
+        <Dropdown.DropdownMenuTrigger className="absolute right-2 top-2 z-10 inline-flex h-10 w-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
           <MoreHorizontal />
         </Dropdown.DropdownMenuTrigger>
 
@@ -109,7 +109,7 @@ export default function AllProjects() {
             asChild
           >
             <Link to={`/${project.id}`}>
-              <Eye className="mr-2 size-5" />
+              <Eye className="size-5 mr-2" />
               <span>View Project</span>
             </Link>
           </Dropdown.DropdownMenuItem>
@@ -117,12 +117,12 @@ export default function AllProjects() {
             className="cursor-pointer text-base"
             onClick={() => openInFolder(project.path)}
           >
-            <FolderOpen className="mr-2 size-5" />
+            <FolderOpen className="size-5 mr-2" />
             <span>Open in Folder</span>
           </Dropdown.DropdownMenuItem>
           <Dropdown.DropdownMenuSub>
             <Dropdown.DropdownMenuSubTrigger className="cursor-pointer text-base">
-              <Trash2 className="mr-2 size-5 text-red-600" />
+              <Trash2 className="size-5 mr-2 text-red-600" />
               <span className="text-red-500">Delete Project</span>
             </Dropdown.DropdownMenuSubTrigger>
 
@@ -133,10 +133,10 @@ export default function AllProjects() {
                 </Dropdown.DropdownMenuLabel>
                 <Dropdown.DropdownMenuSeparator />
                 <Dropdown.DropdownMenuItem
-                  className="cursor-pointer text-red-500 text-base"
+                  className="cursor-pointer text-base text-red-500"
                   onClick={() => deleteProject(project.id)}
                 >
-                  <Trash2 className="mr-2 size-5" />
+                  <Trash2 className="size-5 mr-2" />
                   <span>Yes</span>
                 </Dropdown.DropdownMenuItem>
               </Dropdown.DropdownMenuSubContent>

@@ -64,7 +64,7 @@ export default function Project() {
       <div className="h-[calc(100vh-56px)] p-4">
         <Resizable.ResizablePanelGroup
           direction="horizontal"
-          className="rounded-xl border bg-card shadow-sm text-card-foreground"
+          className="rounded-xl border bg-card text-card-foreground shadow-sm"
         >
           <Resizable.ResizablePanel
             minSize={15}

@@ -1,9 +1,9 @@
 import { FileTreeFolder } from "@/components/file-tree";
-import filterTree from "@/utils/filter-tree";
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import filterTree from "@/utils/filter-tree";
 import { Search } from "lucide-react";
+import React, { useState } from "react";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 
 export default function Sidebar(props: { fileTree: FileTreeProps }) {
@@ -33,7 +33,7 @@ export default function Sidebar(props: { fileTree: FileTreeProps }) {
   return (
     <>
       <form
-        className="sticky bg-background z-20 rounded-b-xl shadow-sm w-full left-0 top-0 p-2 flex"
+        className="sticky left-0 top-0 z-20 flex w-full rounded-b-xl bg-background p-2 shadow-sm"
         onSubmit={submitHandler}
       >
         <div className="flex w-full items-center gap-2">
@@ -41,7 +41,7 @@ export default function Sidebar(props: { fileTree: FileTreeProps }) {
             type="text"
             placeholder="Search..."
             name="search"
-            className="grow max-w-none min-w-none w-auto"
+            className="min-w-none w-auto max-w-none grow"
           />
           <Button size="icon">
             <Search className="size-4" />
