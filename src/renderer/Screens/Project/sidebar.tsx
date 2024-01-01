@@ -6,8 +6,11 @@ import { Search } from "lucide-react";
 import React, { useState } from "react";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 
-export default function Sidebar(props: { fileTree: FileTreeProps }) {
-  const { fileTree } = props;
+export default function Sidebar(props: {
+  fileTree: FileTreeProps;
+  projectPath: string;
+}) {
+  const { fileTree, projectPath } = props;
 
   const [pathToTexture, setPathToTexture] = useState<string>();
   const [query, setQuery] = useState<string>("");
@@ -55,7 +58,11 @@ export default function Sidebar(props: { fileTree: FileTreeProps }) {
         </div>
       </form>
 
-      <FileTreeFolder fileTree={modifiedFileTree()} query={query} />
+      <FileTreeFolder
+        fileTree={modifiedFileTree()}
+        query={query}
+        projectPath={projectPath}
+      />
 
       {pathToTexture ? (
         <code className="shadow-xs fixed bottom-2 left-4 flex select-none items-center rounded-xl border bg-background p-2 text-xs">

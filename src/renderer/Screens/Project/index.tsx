@@ -73,7 +73,9 @@ export default function Project() {
             maxSize={20}
             className="!overflow-scroll"
           >
-            {fileTree?.name && <Sidebar fileTree={fileTree} />}
+            {fileTree?.name && (
+              <Sidebar fileTree={fileTree} projectPath={projectFile.path} />
+            )}
           </Resizable.ResizablePanel>
           <Resizable.ResizableHandle />
           <Resizable.ResizablePanel>

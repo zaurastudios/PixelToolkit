@@ -17,6 +17,7 @@ const unlistedDirs = [
   "lang",
   "font",
   "atlases",
+  "colormap",
 ];
 function treeBuilder(projectPath: string): FileTreeProps {
   const files = fs.readdirSync(projectPath);
@@ -76,7 +77,7 @@ export default function ProjectEventsHandler(mainWindow: BrowserWindow) {
 
     ipcMain.on("open-in-folder", (event, shellPath) => {
       try {
-        shell.openPath(shellPath);
+        shell.showItemInFolder(shellPath);
       } catch (err) {
         console.error(err);
       }

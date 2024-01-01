@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Filter, Palette, Puzzle } from "lucide-react";
 import * as Tooltip from "@/components/ui/tooltip";
@@ -6,6 +6,7 @@ import titleString from "@/utils/title";
 import * as Select from "@/components/ui/select";
 
 type TabOptions = "normal" | "ctm" | "filters";
+
 const textureFilesOptions = [
   "General",
   "Color",
@@ -36,6 +37,15 @@ export default function ProjectConifg() {
       setSelectedTexture(true);
     }
   });
+
+  useEffect(
+    () =>
+      window.electron.ipcRenderer.sendMessage(
+        "select-texture-file",
+        textureFile,
+      ),
+    [textureFile],
+  );
 
   return (
     <div className="flex flex-col gap-4 p-2">

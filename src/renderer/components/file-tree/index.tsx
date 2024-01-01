@@ -5,14 +5,20 @@ import { FileTreeProps } from "../../../main/ipc-events/project";
 import { Button } from "../ui/button";
 
 export const FileTreeFolder = React.memo(
-  (props: { fileTree: FileTreeProps; query: string }) => {
-    const { fileTree, query } = props;
+  (props: { fileTree: FileTreeProps; query: string; projectPath: string }) => {
+    const { fileTree, query, projectPath } = props;
 
     return (
       <div className="p-2">
         {fileTree.children?.map((entry) => (
           // eslint-disable-next-line
-          <Entry key={uuidv4()} entry={entry} depth={1} query={query} path="" />
+          <Entry
+            key={uuidv4()}
+            entry={entry}
+            depth={1}
+            query={query}
+            path={projectPath}
+          />
         ))}
       </div>
     );
@@ -27,7 +33,7 @@ type EntryProps = {
   path: string;
 };
 
-export function Entry({ entry, depth, query, path }: EntryProps) {
+export const Entry = React.memo(({ entry, depth, query, path }: EntryProps) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(
     query.length > 2 && !entry.isMat,
   );
@@ -41,6 +47,7 @@ export function Entry({ entry, depth, query, path }: EntryProps) {
   return (
     <>
       <Button
+        data-label="filefolder"
         onClick={() => {
           if (!entry.isMat) {
             setIsExpanded((prev) => !prev);
@@ -50,6 +57,7 @@ export function Entry({ entry, depth, query, path }: EntryProps) {
         }}
         variant={isExpanded ? "secondary" : "ghost"}
         className="h-max px-2 py-2 pr-3 leading-3"
+        data-path={currentPath + (entry.isMat ? "/mat.yml" : "")}
       >
         {entry.isMat && <Paintbrush className="size-4 mr-2 opacity-50" />}
         {!entry.isMat && entry.children && (
@@ -63,6 +71,7 @@ export function Entry({ entry, depth, query, path }: EntryProps) {
         )}
         <span>{entry.name}</span>
       </Button>
+
       <div className="ml-1 mt-1 border-l">
         {isExpanded && (
           <div className="ml-1">
@@ -81,4 +90,4 @@ export function Entry({ entry, depth, query, path }: EntryProps) {
       </div>
     </>
   );
-}
+});
