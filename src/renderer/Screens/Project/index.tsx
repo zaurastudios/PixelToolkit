@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ProjectFile } from "../../../main/config-dir";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 import Sidebar from "./sidebar";
+import TextureInterface from "./texture-interface";
 
 type FileTreeReply =
   | { redirect: false; fileTree: FileTreeProps }
@@ -76,9 +77,7 @@ export default function Project() {
           </Resizable.ResizablePanel>
           <Resizable.ResizableHandle />
           <Resizable.ResizablePanel>
-            <div className="flex h-[200px] items-center justify-center p-6">
-              <span className="font-semibold">Two</span>
-            </div>
+            <TextureInterface />
           </Resizable.ResizablePanel>
         </Resizable.ResizablePanelGroup>
       </div>
