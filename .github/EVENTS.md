@@ -22,6 +22,13 @@ Present in [`src/main/ipc-events/create.ts`](/src/main/ipc-events/create.ts)
 - `selected-path-in-config`: Checks if the passed path arg is present in the app's `config.json` file.
   - **Replies:**
     - `selected-path-is-in-config`: Verifies the yml and returns {boolean, message}.
+- `get-yml-data`: Accepts the path to `project.yml` file and parses the data.
+  - **Replies:**
+    - `yml-data`: Returns the parsed data if exists, else false.
+- `add-existing-project`: Accepts the yml path, project title and description then tries to save the project to the app's config file and update the `project.yml` file if changes.
+  - **Replies:**
+    - `created`: Returns only if project addition is successful, returns project ID.
+    - `error-create`: Returns a string with error message on failure.
 
 ## Project Events
 
@@ -32,4 +39,11 @@ Present in [`src/main/ipc-events/project.ts`](/src/main/ipc-events/project.ts)
     - `my-projects`: Returns the config data.
 - `get-project-data-with-id`: Accepts an id. Fetches the project file data from the app's `config.json` and then filters with id.
   - **Replies:**
-    - `project-data-reply`: Returns false if no project file with that id is found, else returns the project data if found
+    - `project-data-reply`: Returns false if no project file with that id is found, else returns the project data if found.
+- `open-in-folder`: Accepts path and opens the path in OS default files software.
+- `delete-project`: Accepts ID and calls the function to remove the project.
+  - **Replies:**
+    - `deleted-project:` Returns an object with message for toast and error indicator.
+- `get-project-file-tree`: Accepts project path and calls the tree builder function.
+  - **Replies:**:
+    - `project-file-tree`: If file tree is found, returns file tree, else redirects user to home page.

@@ -22,7 +22,7 @@ export default function MenuBar() {
   );
 
   return (
-    <nav className="p-4 w-max pb-0">
+    <nav className="w-max p-4 pb-0">
       <Menu.Menubar>
         <Menu.MenubarMenu>
           <Menu.MenubarTrigger>File</Menu.MenubarTrigger>
