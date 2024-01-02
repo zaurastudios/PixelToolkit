@@ -8,11 +8,7 @@ export default function TextureInterface() {
         <ProjectConifg />
       </Resizable.ResizablePanel>
       <Resizable.ResizableHandle />
-      <Resizable.ResizablePanel>
-        <div className="flex h-[200px] items-center justify-center p-6">
-          <span className="font-semibold">Two</span>
-        </div>
-      </Resizable.ResizablePanel>
+      <Resizable.ResizablePanel />
     </Resizable.ResizablePanelGroup>
   );
 }
