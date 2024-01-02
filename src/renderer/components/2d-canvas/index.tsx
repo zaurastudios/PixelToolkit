@@ -57,10 +57,19 @@ function Mesh() {
   texture.minFilter = THREE.NearestFilter;
   texture.magFilter = THREE.NearestFilter;
 
+  let planeWidth = 1;
+  let planeHeight = 1;
+
+  if (selectedTexture && selectedTexture.file) {
+    const aspectRatio = texture.image.width / texture.image.height;
+    planeWidth = aspectRatio > 1 ? aspectRatio : 1;
+    planeHeight = aspectRatio > 1 ? 1 : 1 / aspectRatio;
+  }
+
   if (selectedTexture && selectedTexture.file) {
     return (
       <mesh ref={meshRef}>
-        <planeGeometry args={[1, 1]} />
+        <planeGeometry args={[planeWidth, planeHeight]} />
         <meshBasicMaterial map={texture} />
       </mesh>
     );
