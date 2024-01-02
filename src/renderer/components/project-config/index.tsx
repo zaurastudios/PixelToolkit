@@ -23,11 +23,11 @@ const textureFilesOptions = [
   "SSS",
   "Emissive",
 ] as const;
-type TextureFiles = (typeof textureFilesOptions)[number];
+export type TextureFilesTypes = (typeof textureFilesOptions)[number];
 
 export default function ProjectConifg() {
   const [tabOption, setTabOption] = useState<TabOptions>("normal");
-  const [textureFile, setTextureFile] = useState<TextureFiles>("Color");
+  const [textureFile, setTextureFile] = useState<TextureFilesTypes>("Color");
   const [selectedTexture, setSelectedTexture] = useState<boolean>(true);
 
   window.electron.ipcRenderer.on("selected-texture", (arg) => {

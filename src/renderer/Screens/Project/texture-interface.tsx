@@ -1,3 +1,4 @@
+import TwoDCanvas from "@/components/2d-canvas";
 import ProjectConifg from "@/components/project-config";
 import * as Resizable from "@/components/ui/resizable";
 
@@ -8,7 +9,9 @@ export default function TextureInterface() {
         <ProjectConifg />
       </Resizable.ResizablePanel>
       <Resizable.ResizableHandle />
-      <Resizable.ResizablePanel />
+      <Resizable.ResizablePanel>
+        <TwoDCanvas />
+      </Resizable.ResizablePanel>
     </Resizable.ResizablePanelGroup>
   );
 }

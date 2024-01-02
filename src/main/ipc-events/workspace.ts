@@ -1,10 +1,11 @@
 import { BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import fs from "fs";
+import titleString from "../../renderer/utils/title";
 
 const textureFiles = [
   {
-    name: "albedo",
+    name: "color",
     match: /.*(albedo|color).*\.png$/i,
   },
   {
@@ -64,12 +65,16 @@ export default function WorkspaceEventsHandler(mainWindow: BrowserWindow) {
       const pathToTextureFiles = textureFiles.map((texture) => {
         const textureFile = files.filter((file) => file.match(texture.match));
         return {
-          name: texture.name,
-          file: textureFile.length ? `${selectedPath}/${textureFile}` : null,
+          name: titleString(texture.name),
+          file: textureFile.length ? `${selectedPath}/${textureFile[0]}` : null,
         };
       });
 
       event.reply("selected-texture", selectedPath, pathToTextureFiles);
+    });
+
+    ipcMain.on("select-texture-file", (event, f) => {
+      event.reply("selected-texture-file", (f as string).toLowerCase());
     });
   } catch (err) {
     console.error(err);
