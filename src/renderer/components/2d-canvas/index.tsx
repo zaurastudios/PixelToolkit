@@ -1,9 +1,13 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
+import * as THREE from "three";
 import { TextureLoader } from "three";
 import titleString from "@/utils/title";
 import placeholder from "@/assets/placeholder.png";
+import { Stats, OrbitControls } from "@react-three/drei";
 import { TextureFilesTypes } from "../project-config";
+
+const DEFAULT_TEXTURE_TYPE: TextureFilesTypes = "Color";
 
 type TextureFiles = {
   name: string;
@@ -13,45 +17,47 @@ type TextureFiles = {
 function Mesh() {
   const meshRef = useRef(null);
 
-  const [textureFile, setTextureFile] = useState<TextureFiles[]>([]);
-  const [selectedTextureFile, setSelectedTextureFile] =
-    useState<TextureFiles>();
-  const [textureFileType, setTextureFileType] =
-    useState<TextureFilesTypes>("Color");
+  const [textureFiles, setTextureFiles] = useState<TextureFiles[]>([]);
+  const [selectedTexture, setSelectedTexture] = useState<TextureFiles>();
+  const [textureType, setTextureType] =
+    useState<TextureFilesTypes>(DEFAULT_TEXTURE_TYPE);
 
   useEffect(() => {
+    const handleSelectedTextureFile = (f: any) => {
+      const selectedTextureH = ["color", "general"].includes(
+        String(f).toLowerCase(),
+      )
+        ? DEFAULT_TEXTURE_TYPE
+        : (titleString(String(f)) as TextureFilesTypes);
+      setTextureType(selectedTextureH);
+    };
+
     window.electron.ipcRenderer.sendMessage("select-texture-file", "color");
+
+    window.electron.ipcRenderer.on("selected-texture", (_, textureF) => {
+      setTextureFiles(textureF as TextureFiles[]);
+    });
+
+    window.electron.ipcRenderer.on(
+      "selected-texture-file",
+      handleSelectedTextureFile,
+    );
   }, []);
 
-  window.electron.ipcRenderer.on("selected-texture", (selectedPath, textureF) =>
-    setTextureFile(textureF as TextureFiles[]),
-  );
-  window.electron.ipcRenderer.on("selected-texture-file", (f) => {
-    let selectedTexture: TextureFilesTypes;
-    if (f) {
-      selectedTexture = titleString(String(f)) as TextureFilesTypes;
-    } else {
-      selectedTexture = "Color";
-    }
-    setTextureFileType(selectedTexture);
-  });
   useEffect(() => {
-    if (textureFile.length) {
-      setSelectedTextureFile(
-        textureFile.filter((t) => t.name === textureFileType)[0],
-      );
+    if (textureFiles.length) {
+      setSelectedTexture(textureFiles.find((t) => t.name === textureType));
     }
-  }, [textureFile, textureFileType]);
+  }, [textureFiles, textureType]);
 
   const texture = useLoader(
     TextureLoader,
-    selectedTextureFile?.file
-      ? `atom://${selectedTextureFile?.file}`
-      : placeholder,
+    selectedTexture?.file ? `atom://${selectedTexture?.file}` : placeholder,
   );
-  console.log(selectedTextureFile);
+  texture.minFilter = THREE.NearestFilter;
+  texture.magFilter = THREE.NearestFilter;
 
-  if (selectedTextureFile && selectedTextureFile.file) {
+  if (selectedTexture && selectedTexture.file) {
     return (
       <mesh ref={meshRef}>
         <planeGeometry args={[1, 1]} />
@@ -59,6 +65,8 @@ function Mesh() {
       </mesh>
     );
   }
+
+  return null;
 }
 
 export default function TwoDCanvas() {
@@ -66,6 +74,8 @@ export default function TwoDCanvas() {
     <Canvas>
       <Suspense fallback={null}>
         <Mesh />
+        <OrbitControls enableRotate={false} />
+        <Stats />
       </Suspense>
     </Canvas>
   );
