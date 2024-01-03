@@ -2,8 +2,9 @@ import { FileTreeFolder } from "@/components/file-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import filterTree from "@/utils/filter-tree";
-import { Search } from "lucide-react";
+import { FolderSync, Search } from "lucide-react";
 import React, { useState } from "react";
+import * as Tooltip from "@/components/ui/tooltip";
 import { FileTreeProps } from "../../../main/ipc-events/project";
 
 export default function Sidebar(props: {
@@ -41,22 +42,43 @@ export default function Sidebar(props: {
 
   return (
     <>
-      <form
-        className="sticky left-0 top-0 z-20 flex w-full rounded-b-xl bg-background p-2 shadow-sm"
-        onSubmit={submitHandler}
-      >
-        <div className="flex w-full items-center gap-2">
-          <Input
-            type="text"
-            placeholder="Search..."
-            name="search"
-            className="min-w-none w-auto max-w-none grow"
-          />
-          <Button size="icon">
-            <Search className="size-4" />
-          </Button>
+      <div className="sticky left-0 top-0 z-20 flex flex-col gap-2 rounded-b-xl bg-background p-2 shadow-sm">
+        <div className="flex justify-end">
+          <Tooltip.TooltipProvider>
+            <Tooltip.Tooltip>
+              <Tooltip.TooltipTrigger>
+                <Button
+                  variant="outline"
+                  className="px-8"
+                  onClick={() =>
+                    window.electron.ipcRenderer.sendMessage(
+                      "get-project-file-tree",
+                      projectPath,
+                    )
+                  }
+                >
+                  <FolderSync className="size-4" />
+                </Button>
+              </Tooltip.TooltipTrigger>
+              <Tooltip.TooltipContent>Resync Folder</Tooltip.TooltipContent>
+            </Tooltip.Tooltip>
+          </Tooltip.TooltipProvider>
         </div>
-      </form>
+
+        <form className="flex w-full" onSubmit={submitHandler}>
+          <div className="flex w-full items-center gap-2">
+            <Input
+              type="text"
+              placeholder="Search..."
+              name="search"
+              className="min-w-none w-auto max-w-none grow"
+            />
+            <Button size="icon">
+              <Search className="size-4" />
+            </Button>
+          </div>
+        </form>
+      </div>
 
       <FileTreeFolder
         fileTree={modifiedFileTree()}
