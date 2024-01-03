@@ -9,7 +9,7 @@ export default function TextureInterface() {
         <ProjectConifg />
       </Resizable.ResizablePanel>
       <Resizable.ResizableHandle />
-      <Resizable.ResizablePanel>
+      <Resizable.ResizablePanel className="bg-foreground/5">
         <TwoDCanvas />
       </Resizable.ResizablePanel>
     </Resizable.ResizablePanelGroup>

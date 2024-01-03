@@ -83,7 +83,7 @@ export default function TwoDCanvas() {
     <Canvas>
       <Suspense fallback={null}>
         <Mesh />
-        <OrbitControls enableRotate={false} />
+        <OrbitControls enableRotate={false} minDistance={0.1} maxDistance={5} />
         <Stats />
       </Suspense>
     </Canvas>

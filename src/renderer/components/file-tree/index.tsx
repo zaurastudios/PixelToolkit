@@ -75,7 +75,6 @@ export const Entry = React.memo(({ entry, depth, query, path }: EntryProps) => {
       <div className="ml-1 mt-1 border-l">
         {isExpanded && (
           <div className="ml-1">
-            {" "}
             {entry.children?.map((e) => (
               <Entry
                 key={uuidv4()}
