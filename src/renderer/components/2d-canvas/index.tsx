@@ -46,9 +46,16 @@ function Mesh() {
 
   useEffect(() => {
     if (textureFiles.length) {
-      setSelectedTexture(textureFiles.find((t) => t.name === textureType));
+      setSelectedTexture(
+        textureFiles.find(
+          (t) =>
+            t.name.toLowerCase().includes(textureType.toLowerCase()) ||
+            textureType.toLowerCase().includes(t.name.toLowerCase()),
+        ),
+      );
     }
   }, [textureFiles, textureType]);
+  console.log(selectedTexture, textureFiles);
 
   const texture = useLoader(
     TextureLoader,

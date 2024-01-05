@@ -5,6 +5,9 @@ import * as Tooltip from "@/components/ui/tooltip";
 import titleString from "@/utils/title";
 import * as Select from "@/components/ui/select";
 
+// eslint-disable-next-line
+import DefaultTab from "./default-tab";
+
 type TabOptions = "normal" | "ctm" | "filters";
 
 const textureFilesOptions = [
@@ -77,7 +80,9 @@ export default function ProjectConifg() {
         </Tooltip.TooltipProvider>
       </div>
 
-      <Select.Select onValueChange={(e) => setTextureFile(e as TextureFiles)}>
+      <Select.Select
+        onValueChange={(e) => setTextureFile(e as TextureFilesTypes)}
+      >
         <Select.SelectTrigger disabled={selectedTexture} className="w-full">
           <Select.SelectValue
             placeholder={textureFile}
@@ -93,6 +98,10 @@ export default function ProjectConifg() {
           ))}
         </Select.SelectContent>
       </Select.Select>
+
+      {!selectedTexture && tabOption === "normal" && (
+        <DefaultTab textureFileOption={textureFile} />
+      )}
     </div>
   );
 }

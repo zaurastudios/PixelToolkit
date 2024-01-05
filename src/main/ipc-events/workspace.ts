@@ -1,5 +1,4 @@
 import { BrowserWindow, ipcMain } from "electron";
-import path from "path";
 import fs from "fs";
 import titleString from "../../renderer/utils/title";
 
