@@ -55,7 +55,6 @@ function Mesh() {
       );
     }
   }, [textureFiles, textureType]);
-  console.log(selectedTexture, textureFiles);
 
   const texture = useLoader(
     TextureLoader,
@@ -90,7 +89,7 @@ export default function TwoDCanvas() {
     <Canvas>
       <Suspense fallback={null}>
         <Mesh />
-        <OrbitControls enableRotate={false} minDistance={0.1} maxDistance={5} />
+        <OrbitControls enableRotate={false} minDistance={0.1} />
         <Stats />
       </Suspense>
     </Canvas>

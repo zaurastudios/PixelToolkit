@@ -6,7 +6,7 @@ import titleString from "@/utils/title";
 import * as Select from "@/components/ui/select";
 
 // eslint-disable-next-line
-import DefaultTab from "./default-tab";
+import DefaultTab from "./tabs";
 
 type TabOptions = "normal" | "ctm" | "filters";
 
@@ -28,7 +28,11 @@ const textureFilesOptions = [
 ] as const;
 export type TextureFilesTypes = (typeof textureFilesOptions)[number];
 
-export default function ProjectConifg() {
+export default function ProjectConfig({
+  texturePath,
+}: {
+  texturePath: string;
+}) {
   const [tabOption, setTabOption] = useState<TabOptions>("normal");
   const [textureFile, setTextureFile] = useState<TextureFilesTypes>("Color");
   const [selectedTexture, setSelectedTexture] = useState<boolean>(true);
@@ -100,7 +104,7 @@ export default function ProjectConifg() {
       </Select.Select>
 
       {!selectedTexture && tabOption === "normal" && (
-        <DefaultTab textureFileOption={textureFile} />
+        <DefaultTab textureFileOption={textureFile} texturePath={texturePath} />
       )}
     </div>
   );

@@ -18,12 +18,12 @@ export default function Home() {
                 href="https://github.com/null511/PixelGraph-Release"
                 target="_blank"
                 rel="noreferrer"
-                className="underline text-foreground/90"
+                className="text-foreground/90 underline"
               >
                 PixelGraph
               </a>
               . It allows you to convert raw texture files, or{" "}
-              <code className="bg-foreground/10 rounded-lg px-2 py-1">
+              <code className="rounded-lg bg-foreground/10 px-2 py-1">
                 .sbs
               </code>{" "}
               files to a PBR format that is accepted in Minecraft.

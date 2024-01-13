@@ -19,6 +19,7 @@ export default function Project() {
   const [loading, setLoading] = useState(true);
   const [projectFile, setProjectFile] = useState<ProjectFile>();
   const [fileTree, setFileTree] = useState<FileTreeProps>();
+  const [pathToSelectedTexture, setPathToSelectedTexture] = useState<string>();
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage("get-project-data-with-id", id!);
@@ -52,6 +53,9 @@ export default function Project() {
         setLoading(false);
       }
     });
+    window.electron.ipcRenderer.on("selected-texture", (selectedPath) => {
+      setPathToSelectedTexture(selectedPath as string);
+    });
 
     // eslint-disable-next-line
   }, [id, navigate]);
@@ -79,7 +83,7 @@ export default function Project() {
           </Resizable.ResizablePanel>
           <Resizable.ResizableHandle />
           <Resizable.ResizablePanel>
-            <TextureInterface />
+            <TextureInterface texturePath={pathToSelectedTexture ?? ""} />
           </Resizable.ResizablePanel>
         </Resizable.ResizablePanelGroup>
       </div>

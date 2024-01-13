@@ -9,7 +9,7 @@ Present in: [`src/main/ipc-events/index.ts`](/src/main/ipc-events/index.ts)
 
 Present in [`src/main/ipc-events/create.ts`](/src/main/ipc-events/create.ts)
 
-- `open-directory`: OpeUns the dialog for choosing directory for project files.
+- `open-directory`: Opens the dialog for choosing directory for project files.
   - **Replies:**
     - `opened-directory`: Returns if cancelled or not, path to dir (if not cancelled) and if selected dir is empty (if not cancelled)
 - `open-yml`: This is for selecting a pre-existing project.
@@ -55,3 +55,6 @@ Present in [`src/main/ipc-events/workspace.ts`](/src/main/ipc-events/workspace.t
 - `select-texture`: Accepts path to texture.
   - **Replies:**
     - `selected-texture`: Returns the path to texture.
+- `get-texture-values`: Accepts project path and select option.
+  - **Replies:**
+    - `texture-values`: Returns texture values.

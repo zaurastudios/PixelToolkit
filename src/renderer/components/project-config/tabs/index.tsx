@@ -6,8 +6,10 @@ import Rough from "./rough";
 
 export default function DefaultTab({
   textureFileOption,
+  texturePath,
 }: {
   textureFileOption: TextureFilesTypes;
+  texturePath: string;
 }) {
   let Component = null;
 
@@ -25,7 +27,7 @@ export default function DefaultTab({
       break;
 
     case "Roughness":
-      Component = <Rough />;
+      Component = <Rough texturePath={texturePath} />;
       break;
 
     default:
