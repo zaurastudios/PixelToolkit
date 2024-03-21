@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain } from "electron";
 import fs from "fs";
 import YAML from "yaml";
 import titleString from "../../renderer/utils/title";
+import path from "path";
 
 const textureFiles = [
   {
@@ -69,6 +70,10 @@ export default function WorkspaceEventsHandler(mainWindow: BrowserWindow) {
           file: textureFile.length ? `${selectedPath}/${textureFile[0]}` : null,
         };
       });
+      const matYmlFile = YAML.parse(
+        fs.readFileSync(path.resolve(selectedPath, "mat.yml"), "utf-8"),
+      );
+      console.log(matYmlFile);
 
       event.reply("selected-texture", selectedPath, pathToTextureFiles);
     });

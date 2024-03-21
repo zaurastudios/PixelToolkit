@@ -24,6 +24,7 @@ function Mesh() {
 
   useEffect(() => {
     const handleSelectedTextureFile = (f: any) => {
+      // Automatically set Color as the default select option
       const selectedTextureH = ["color", "general"].includes(
         String(f).toLowerCase(),
       )
@@ -73,6 +74,39 @@ function Mesh() {
   }
 
   if (selectedTexture && selectedTexture.file) {
+    if (!["Color", "General", "Normal"].includes(selectedTexture.name)) {
+      const shaderMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: texture },
+        },
+        vertexShader: `
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+        fragmentShader: `
+    uniform sampler2D tDiffuse;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      float grayscale = ((color.r + color.g + color.b) / 3.0) + -0.15;
+      gl_FragColor = vec4(vec3(grayscale), 1.0);
+    }
+  `,
+      });
+
+      return (
+        <mesh ref={meshRef}>
+          <planeGeometry args={[planeWidth, planeHeight]} />
+          <primitive object={shaderMaterial} />
+        </mesh>
+      );
+    }
+
     return (
       <mesh ref={meshRef}>
         <planeGeometry args={[planeWidth, planeHeight]} />
