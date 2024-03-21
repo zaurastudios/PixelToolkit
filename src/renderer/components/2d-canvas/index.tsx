@@ -93,7 +93,7 @@ function Mesh() {
 
     void main() {
       vec4 color = texture2D(tDiffuse, vUv);
-      float grayscale = ((color.r + color.g + color.b) / 3.0) + -0.15;
+      float grayscale = (((color.r + color.g + color.b) / 3.0) - 0.15) * 1.5;
       gl_FragColor = vec4(vec3(grayscale), 1.0);
     }
   `,
