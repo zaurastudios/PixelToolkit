@@ -11,8 +11,11 @@ import {
 import { useKeyboardShortcut } from "@/lib/use-keyboard-shortcut";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Preferences } from "./preferences";
+import { useState } from "react";
 
 export const Navigation = () => {
+  const [openPreferences, setOpenPreferences] = useState(false);
+
   const navigate = useNavigate();
 
   async function closeWindow() {
@@ -30,6 +33,14 @@ export const Navigation = () => {
   useKeyboardShortcut({
     key: "Q",
     handler: closeWindow,
+    ctrlKey: true,
+  });
+
+  // Open preferences
+  const toggleOpenPreferences = () => setOpenPreferences((e) => !e);
+  useKeyboardShortcut({
+    key: ",",
+    handler: toggleOpenPreferences,
     ctrlKey: true,
   });
 
@@ -57,10 +68,14 @@ export const Navigation = () => {
             <MenubarTrigger className="px-1 py-0">Edit</MenubarTrigger>
             <MenubarContent>
               <MenubarSeparator />
-              <Preferences />
+              <MenubarItem onClick={toggleOpenPreferences}>
+                Preferences{" "}
+                <MenubarShortcut className="font-mono">^,</MenubarShortcut>
+              </MenubarItem>
             </MenubarContent>
           </MenubarMenu>
         </Menubar>
+        <Preferences open={openPreferences} onOpenChange={setOpenPreferences} />
       </nav>
     </header>
   );
