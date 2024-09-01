@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
 import "./global.scss";
+
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useEffect } from "react";
+import { MemoryRouter as Router, Routes } from "react-router-dom";
+import { Navigation } from "@/components/navigation";
 
 function App() {
   useEffect(() => {
-    const setTheme = async () => {
+    const init = async () => {
       const systemTheme = await getCurrentWindow().theme();
       const storedTheme = localStorage.getItem("theme") as
         | "light"
@@ -22,9 +23,20 @@ function App() {
       }
     };
 
-    setTheme();
+    init();
   }, []);
-  return <></>;
+
+  return (
+    <>
+      <Router>
+        <Navigation />
+        <Routes>
+          {/* <Route path="/" element={<Home />} /> */}
+          {/* <Route path="/:id" element={<Project />} /> */}
+        </Routes>
+      </Router>
+    </>
+  );
 }
 
 export default App;
