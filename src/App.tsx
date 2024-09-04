@@ -2,8 +2,9 @@ import "./global.scss";
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
-import { MemoryRouter as Router, Routes } from "react-router-dom";
+import { Route, MemoryRouter as Router, Routes } from "react-router-dom";
 import { Navigation } from "@/components/navigation";
+import { Home } from "./screens/home";
 
 function App() {
   useEffect(() => {
@@ -31,7 +32,7 @@ function App() {
       <Router>
         <Navigation />
         <Routes>
-          {/* <Route path="/" element={<Home />} /> */}
+          <Route path="/" element={<Home />} />
           {/* <Route path="/:id" element={<Project />} /> */}
         </Routes>
       </Router>

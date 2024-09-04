@@ -45,38 +45,35 @@ export const Navigation = () => {
   });
 
   return (
-    <header className="p-1">
-      <nav className="w-full rounded-lg bg-zinc-200/80 dark:bg-zinc-900/50">
-        <Menubar className="h-auto border-0 bg-transparent">
-          <MenubarMenu>
-            <MenubarTrigger className="px-1 py-0">File</MenubarTrigger>
-            <MenubarContent>
-              <MenubarItem asChild>
-                <Link to="/">
-                  Home{" "}
-                  <MenubarShortcut className="font-mono">^H</MenubarShortcut>
-                </Link>
-              </MenubarItem>
+    <nav className="w-full bg-zinc-200/80 dark:bg-zinc-900/50">
+      <Menubar className="h-auto border-0 bg-transparent">
+        <MenubarMenu>
+          <MenubarTrigger className="px-1 py-0">File</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem asChild>
+              <Link to="/">
+                Home <MenubarShortcut className="font-mono">^H</MenubarShortcut>
+              </Link>
+            </MenubarItem>
 
-              <MenubarItem onClick={closeWindow}>
-                Quit <MenubarShortcut className="font-mono">^Q</MenubarShortcut>
-              </MenubarItem>
-            </MenubarContent>
-          </MenubarMenu>
+            <MenubarItem onClick={closeWindow}>
+              Quit <MenubarShortcut className="font-mono">^Q</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
 
-          <MenubarMenu>
-            <MenubarTrigger className="px-1 py-0">Edit</MenubarTrigger>
-            <MenubarContent>
-              <MenubarSeparator />
-              <MenubarItem onClick={toggleOpenPreferences}>
-                Preferences{" "}
-                <MenubarShortcut className="font-mono">^,</MenubarShortcut>
-              </MenubarItem>
-            </MenubarContent>
-          </MenubarMenu>
-        </Menubar>
-        <Preferences open={openPreferences} onOpenChange={setOpenPreferences} />
-      </nav>
-    </header>
+        <MenubarMenu>
+          <MenubarTrigger className="px-1 py-0">Edit</MenubarTrigger>
+          <MenubarContent>
+            <MenubarSeparator />
+            <MenubarItem onClick={toggleOpenPreferences}>
+              Preferences{" "}
+              <MenubarShortcut className="font-mono">^,</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+      <Preferences open={openPreferences} onOpenChange={setOpenPreferences} />
+    </nav>
   );
 };
