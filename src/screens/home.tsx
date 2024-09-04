@@ -1,15 +1,19 @@
+import { Project } from "@/types/home";
+
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect } from "react";
 
 export function Home() {
-  useEffect(() => {
-    async function getLog() {
-      const data = await invoke("get_projects");
-      console.log(data);
-    }
+  const [projects, setProjects] = useState<Project[]>([]);
 
-    getLog();
-  });
+  useEffect(() => {
+    async function getProjects() {
+      const pr: Project[] = await invoke("get_projects");
+      console.log(pr);
+      setProjects(pr);
+    }
+    getProjects();
+  }, []);
 
   return <></>;
 }
