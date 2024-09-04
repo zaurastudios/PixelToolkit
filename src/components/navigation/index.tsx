@@ -45,7 +45,7 @@ export const Navigation = () => {
   });
 
   return (
-    <nav className="w-full bg-zinc-200/80 dark:bg-zinc-900/50">
+    <nav className="sticky top-0 h-7 w-full bg-zinc-200/80 dark:bg-zinc-900/50">
       <Menubar className="h-auto border-0 bg-transparent">
         <MenubarMenu>
           <MenubarTrigger className="px-1 py-0">File</MenubarTrigger>

@@ -6,7 +6,8 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![core::home::get_projects])
+        .invoke_handler(tauri::generate_handler![core::utils::show_in_folder])
+        .invoke_handler(tauri::generate_handler![core::home::get_projects, core::home::remove_project])
         .setup(|_app| {
             #[cfg(desktop)]
             {}

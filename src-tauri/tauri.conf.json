@@ -19,7 +19,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src blob: data: filesystem: wss: https: tauri: 'unsafe-inline' asset: https://asset.localhost 'self'; script-src 'self'",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**/*"]
+      }
     }
   },
   "bundle": {
@@ -32,5 +36,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "fs": {
+      "all": true,
+      "scope": ["**/*"]
+    },
+    "protocol": {
+      "asset": true,
+      "assetScope": ["**/*"]
+    }
   }
 }
