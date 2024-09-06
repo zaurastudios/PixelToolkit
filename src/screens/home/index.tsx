@@ -1,7 +1,5 @@
 import { Project } from "@/types/home";
 
-import { useEffect, useState } from "react";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import {
   Card,
   CardDescription,
@@ -15,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown";
-import { Eye, FolderOpen, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { Eye, FolderOpen, MoreHorizontal, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CreateProject } from "./create";
 

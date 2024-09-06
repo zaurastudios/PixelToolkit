@@ -10,4 +10,7 @@ export interface Project {
 export interface ProjectInfo {
   name: string | null;
   description?: string | null;
+  createMcDirs: boolean;
+  createRealmsDirs: boolean;
+  createOfDirs: boolean;
 }

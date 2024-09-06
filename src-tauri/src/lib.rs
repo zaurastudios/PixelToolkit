@@ -7,8 +7,11 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![core::utils::show_in_folder])
+        .invoke_handler(tauri::generate_handler![])
         .invoke_handler(tauri::generate_handler![
+            // utils
+            core::utils::show_in_folder,
+            // home
             core::home::get_projects,
             core::home::remove_project,
             core::home::create_project,

@@ -4,6 +4,8 @@ use std::path::Path;
 
 use crate::core::utils::{get_config_dir, simple_toast};
 
+use super::utils::try_create_directory;
+
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Project {
     pub id: String,
@@ -101,6 +103,9 @@ pub fn create_project(
     dir_path: String,
     name: String,
     description: Option<String>,
+    create_mc_dirs: bool,
+    create_realms_dirs: bool,
+    create_of_dirs: bool,
     app: tauri::AppHandle,
 ) -> String {
     let path = Path::new(&dir_path);
@@ -185,6 +190,56 @@ pub fn create_project(
             name, project_description
         ),
     );
+
+    if create_mc_dirs {
+        try_create_directory(&path, &["assets", "minecraft"]);
+        let mc_path = path.join("assets").join("minecraft");
+
+        try_create_directory(&mc_path, &["blockstates"]);
+        try_create_directory(&mc_path, &["font"]);
+        try_create_directory(&mc_path, &["models", "block"]);
+        try_create_directory(&mc_path, &["models", "item"]);
+        try_create_directory(&mc_path, &["particles"]);
+        try_create_directory(&mc_path, &["shaders"]);
+        try_create_directory(&mc_path, &["sounds"]);
+        try_create_directory(&mc_path, &["texts"]);
+        try_create_directory(&mc_path, &["textures", "block"]);
+        try_create_directory(&mc_path, &["textures", "colormap"]);
+        try_create_directory(&mc_path, &["textures", "effect"]);
+        try_create_directory(&mc_path, &["textures", "entity"]);
+        try_create_directory(&mc_path, &["textures", "environment"]);
+        try_create_directory(&mc_path, &["textures", "font"]);
+        try_create_directory(&mc_path, &["textures", "gui"]);
+        try_create_directory(&mc_path, &["textures", "item"]);
+        try_create_directory(&mc_path, &["textures", "map"]);
+        try_create_directory(&mc_path, &["textures", "misc"]);
+        try_create_directory(&mc_path, &["textures", "mob_effect"]);
+        try_create_directory(&mc_path, &["textures", "models"]);
+        try_create_directory(&mc_path, &["textures", "painting"]);
+        try_create_directory(&mc_path, &["textures", "particle"]);
+    }
+    if create_realms_dirs {
+        try_create_directory(&path, &["assets", "realms"]);
+        let realms_path = path.join("assets").join("minecraft");
+
+        try_create_directory(&realms_path, &["textures"]);
+    }
+    if create_of_dirs {
+        try_create_directory(&path, &["assets", "optifine"]);
+        let of_path = path.join("assets").join("optifine");
+
+        try_create_directory(&of_path, &["anim"]);
+        try_create_directory(&of_path, &["cem"]);
+        try_create_directory(&of_path, &["cit"]);
+        try_create_directory(&of_path, &["colormap"]);
+        try_create_directory(&of_path, &["ctm"]);
+        try_create_directory(&of_path, &["font"]);
+        try_create_directory(&of_path, &["gui"]);
+        try_create_directory(&of_path, &["lightmap"]);
+        try_create_directory(&of_path, &["mob"]);
+        try_create_directory(&of_path, &["random"]);
+        try_create_directory(&of_path, &["sky"]);
+    }
 
     if let Err(e) = fs::write(&projects_yml_path, updated_content) {
         eprintln!("Failed to write project file: {}", e);

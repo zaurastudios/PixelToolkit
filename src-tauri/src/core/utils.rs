@@ -1,6 +1,9 @@
 use std::process::Command;
 #[cfg(target_os = "linux")]
-use std::{fs::metadata, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 use tauri::{Emitter, Manager};
 
 #[tauri::command]
@@ -13,17 +16,15 @@ pub fn get_config_dir(app: &tauri::AppHandle) -> String {
 
 #[tauri::command]
 pub fn show_in_folder(path: String) {
-    #[cfg(target_os = "windows")]
-    {
+    let platform = tauri_plugin_os::platform();
+
+    if platform == "windows" {
         Command::new("explorer")
             .args(["/select,", &path]) // The comma after select is not a typo
             .spawn()
             .unwrap();
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        let new_path = match metadata(&path).unwrap().is_dir() {
+    } else if platform == "linux" {
+        let new_path = match fs::metadata(&path).unwrap().is_dir() {
             true => path,
             false => {
                 let mut path2 = PathBuf::from(path);
@@ -32,14 +33,27 @@ pub fn show_in_folder(path: String) {
             }
         };
         Command::new("xdg-open").arg(&new_path).spawn().unwrap();
-    }
-
-    #[cfg(target_os = "macos")]
-    {
+    } else if platform == "macos" {
         Command::new("open").args(["-R", &path]).spawn().unwrap();
     }
 }
 
 pub fn simple_toast(message: String, app: tauri::AppHandle) {
     app.emit("simple-toast", message).unwrap();
+}
+
+pub fn try_create_directory(base_path: &Path, subdirs: &[&str]) {
+    let full_path = subdirs
+        .iter()
+        .fold(base_path.to_path_buf(), |mut acc, &dir| {
+            acc.push(dir);
+            acc
+        });
+
+    if let Err(e) = fs::create_dir_all(&full_path) {
+        eprintln!(
+            "Failed to create directory: {:?}, error: {:?}",
+            full_path, e
+        );
+    }
 }
