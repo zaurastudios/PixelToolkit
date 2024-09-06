@@ -17,10 +17,10 @@ pub fn get_config_dir(app: &tauri::AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn show_in_folder(mut path: String, is_id: bool, app: tauri::AppHandle) {
+pub fn show_in_folder(mut path: String, is_id: Option<bool>, app: tauri::AppHandle) {
     let platform = tauri_plugin_os::platform();
 
-    if is_id {
+    if is_id.unwrap_or(true) {
         let projects: Vec<Project> = get_projects_vec(&app);
         let filtered_projects: Vec<&Project> = projects.iter().filter(|p| p.id == path).collect();
         if !filtered_projects.is_empty() {

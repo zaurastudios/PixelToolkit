@@ -50,7 +50,7 @@ export function Home() {
           return (
             <div key={project.id} className="relative">
               <Link to={`/project/${project.id}`}>
-                <Card className="flex h-28 w-full cursor-pointer flex-col rounded-lg transition-colors hover:bg-foreground/5">
+                <Card className="flex h-[114px] w-full cursor-pointer flex-col rounded-lg transition-colors hover:bg-foreground/5">
                   <div className="flex grow gap-4">
                     {project.pack_image && (
                       <img

@@ -25,3 +25,10 @@ pub struct ProjectYml {
     pub input: Input,
     pub profiles: Vec<Profile>,
 }
+
+#[derive(serde::Serialize)]
+pub struct FileTree {
+    pub name: String,
+    pub is_mat: Option<bool>,
+    pub children: Vec<FileTree>,
+}

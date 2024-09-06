@@ -119,7 +119,7 @@ export const NewProject = ({
                 disabled={!!path}
                 required
                 className={twMerge(
-                  "h-10 max-h-20 min-h-10 w-max",
+                  "h-10 max-h-20 min-h-10 w-full max-w-[462px]",
                   !path && "sr-only",
                 )}
               />
