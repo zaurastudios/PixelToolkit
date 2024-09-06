@@ -49,35 +49,37 @@ export function Home() {
 
           return (
             <div key={project.id} className="relative">
-              <Card className="flex h-28 w-full cursor-pointer flex-col rounded-lg transition-colors hover:bg-foreground/5">
-                <div className="flex grow gap-4">
-                  {project.pack_image && (
-                    <img
-                      src={packPng!}
-                      alt={`${project.name}'s pack.png'`}
-                      className="m-2 mr-0 aspect-square h-24 w-24 rounded shadow"
-                    />
-                  )}
-
-                  <CardHeader
-                    className={`flex grow flex-col justify-center ${
-                      packPng && "pl-0"
-                    }`}
-                  >
-                    <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                      {project.name}
-                    </CardTitle>
-
-                    {project.description && (
-                      <CardDescription className="!mt-0">
-                        {`${project.description.slice(0, 30)}${
-                          project.description.length > 30 ? "..." : ""
-                        }`}
-                      </CardDescription>
+              <Link to={`/project/${project.id}`}>
+                <Card className="flex h-28 w-full cursor-pointer flex-col rounded-lg transition-colors hover:bg-foreground/5">
+                  <div className="flex grow gap-4">
+                    {project.pack_image && (
+                      <img
+                        src={packPng!}
+                        alt={`${project.name}'s pack.png'`}
+                        className="m-2 mr-0 aspect-square h-24 w-24 rounded shadow"
+                      />
                     )}
-                  </CardHeader>
-                </div>
-              </Card>
+
+                    <CardHeader
+                      className={`flex grow flex-col justify-center ${
+                        packPng && "pl-0"
+                      }`}
+                    >
+                      <CardTitle className="flex items-center gap-2 text-lg font-medium">
+                        {project.name}
+                      </CardTitle>
+
+                      {project.description && (
+                        <CardDescription className="!mt-0">
+                          {`${project.description.slice(0, 30)}${
+                            project.description.length > 30 ? "..." : ""
+                          }`}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                  </div>
+                </Card>
+              </Link>
 
               <DropdownMenu>
                 <DropdownMenuTrigger className="absolute right-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
@@ -89,7 +91,7 @@ export function Home() {
                     className="cursor-pointer text-base"
                     asChild
                   >
-                    <Link to={`/${project.id}`}>
+                    <Link to={`/project/${project.id}`}>
                       <Eye className="mr-2 size-5" />
                       <span className="text-center text-sm">View Project</span>
                     </Link>

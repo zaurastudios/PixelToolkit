@@ -1,22 +1,28 @@
-import { Link, useNavigate } from "react-router-dom";
 import {
   Menubar,
-  MenubarMenu,
-  MenubarItem,
-  MenubarTrigger,
-  MenubarShortcut,
   MenubarContent,
+  MenubarItem,
+  MenubarMenu,
   MenubarSeparator,
+  MenubarShortcut,
+  MenubarTrigger,
 } from "@/components/ui/menubar";
 import { useKeyboardShortcut } from "@/lib/use-keyboard-shortcut";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Preferences } from "./preferences";
 import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Preferences } from "./preferences";
 
 export const Navigation = () => {
   const [openPreferences, setOpenPreferences] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
+  const projectId = pathname.includes("project")
+    ? pathname.split("/")[2]
+    : null;
 
   async function closeWindow() {
     await getCurrentWindow().close();
@@ -44,6 +50,19 @@ export const Navigation = () => {
     ctrlKey: true,
   });
 
+  // Open in folder (project page)
+  const showInFolder = () => {
+    if (projectId) {
+      invoke("show_in_folder", { path: projectId, isId: true });
+    }
+  };
+  useKeyboardShortcut({
+    key: "f",
+    handler: showInFolder,
+    ctrlKey: true,
+    shiftKey: true,
+  });
+
   return (
     <nav className="sticky top-0 h-7 w-full bg-zinc-200/80 dark:bg-zinc-900/50">
       <Menubar className="h-auto border-0 bg-transparent">
@@ -56,6 +75,13 @@ export const Navigation = () => {
               </Link>
             </MenubarItem>
 
+            {pathname.includes("project") && (
+              <MenubarItem onClick={showInFolder}>
+                Show in folder{" "}
+                <MenubarShortcut className="font-mono">^⇧F</MenubarShortcut>
+              </MenubarItem>
+            )}
+
             <MenubarItem onClick={closeWindow}>
               Quit <MenubarShortcut className="font-mono">^Q</MenubarShortcut>
             </MenubarItem>
@@ -65,7 +91,7 @@ export const Navigation = () => {
         <MenubarMenu>
           <MenubarTrigger className="px-1 py-0">Edit</MenubarTrigger>
           <MenubarContent>
-            <MenubarSeparator />
+            {pathname !== "/" && <MenubarSeparator />}
             <MenubarItem onClick={toggleOpenPreferences}>
               Preferences{" "}
               <MenubarShortcut className="font-mono">^,</MenubarShortcut>

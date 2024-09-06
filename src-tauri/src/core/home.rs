@@ -51,7 +51,7 @@ pub fn get_projects(app: tauri::AppHandle) -> Result<serde_json::Value, String> 
     Ok(json!(projects))
 }
 
-fn get_projects_vec(app: &tauri::AppHandle) -> Vec<Project> {
+pub fn get_projects_vec(app: &tauri::AppHandle) -> Vec<Project> {
     let config_dir = get_config_dir(&app);
     let projects_yml_path = Path::new(&config_dir).join("projects.yml");
 

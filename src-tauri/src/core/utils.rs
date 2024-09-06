@@ -6,6 +6,8 @@ use std::{
 };
 use tauri::{Emitter, Manager};
 
+use super::home::{get_projects_vec, Project};
+
 #[tauri::command]
 pub fn get_config_dir(app: &tauri::AppHandle) -> String {
     let config_dir = app.path().app_data_dir().unwrap_or(PathBuf::new());
@@ -15,8 +17,16 @@ pub fn get_config_dir(app: &tauri::AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn show_in_folder(path: String) {
+pub fn show_in_folder(mut path: String, is_id: bool, app: tauri::AppHandle) {
     let platform = tauri_plugin_os::platform();
+
+    if is_id {
+        let projects: Vec<Project> = get_projects_vec(&app);
+        let filtered_projects: Vec<&Project> = projects.iter().filter(|p| p.id == path).collect();
+        if !filtered_projects.is_empty() {
+            path = filtered_projects[0].path.clone();
+        }
+    }
 
     if platform == "windows" {
         Command::new("explorer")

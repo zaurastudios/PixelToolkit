@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { Route, MemoryRouter as Router, Routes } from "react-router-dom";
 import { Navigation } from "@/components/navigation";
 import { Home } from "./screens/home";
+import { ProjectPage } from "./screens/project";
 
 function App() {
   useEffect(() => {
@@ -38,7 +39,7 @@ function App() {
         <Navigation />
         <Routes>
           <Route path="/" element={<Home />} />
-          {/* <Route path="/:id" element={<Project />} /> */}
+          <Route path="/project/:id" element={<ProjectPage />} />
         </Routes>
       </Router>
       <Toaster />

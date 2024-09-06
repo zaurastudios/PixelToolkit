@@ -51,7 +51,7 @@ export const NewProject = ({
       if (data.success) {
         reset();
         setDialogOpen(false);
-        navigate(`/${data.id}`);
+        navigate(`/project/${data.id}`);
       } else {
         setError(data.message);
       }
