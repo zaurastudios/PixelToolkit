@@ -56,7 +56,11 @@ export const Preferences = ({
                     Theme
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="theme" className="m-0 p-4">
+                <TabsContent
+                  value="theme"
+                  className="m-0 p-4"
+                  autoFocus={false}
+                >
                   <DialogDescription>Set the app's theme</DialogDescription>
                   <Select onValueChange={changeTheme} defaultValue={theme}>
                     <SelectTrigger className="w-[180px]">

@@ -1,5 +1,8 @@
 import "./global.scss";
 
+import { Toaster } from "@/components/ui/sonner";
+import { simpleToast } from "./lib/toast";
+
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 import { Route, MemoryRouter as Router, Routes } from "react-router-dom";
@@ -22,6 +25,8 @@ function App() {
       if (!storedTheme) {
         localStorage.setItem("theme", theme);
       }
+
+      await simpleToast();
     };
 
     init();
@@ -36,6 +41,7 @@ function App() {
           {/* <Route path="/:id" element={<Project />} /> */}
         </Routes>
       </Router>
+      <Toaster />
     </>
   );
 }

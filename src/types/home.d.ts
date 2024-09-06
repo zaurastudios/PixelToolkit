@@ -6,3 +6,8 @@ export interface Project {
   pack_image?: string;
   date_modified: string;
 }
+
+export interface ProjectInfo {
+  name: string | null;
+  description?: string | null;
+}

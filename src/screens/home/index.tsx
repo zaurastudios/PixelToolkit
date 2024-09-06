@@ -15,8 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown";
-import { Eye, FolderOpen, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, FolderOpen, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CreateProject } from "./create";
 
 export function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -118,6 +119,8 @@ export function Home() {
             </div>
           );
         })}
+
+        <CreateProject />
       </div>
     </main>
   );
