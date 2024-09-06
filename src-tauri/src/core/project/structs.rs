@@ -20,10 +20,10 @@ pub struct Input {
 
 pub struct ProjectYml {
     pub name: String,
-    pub description: String,
-    pub tags: String,
+    pub description: Option<String>,
+    pub tags: Option<String>,
     pub input: Input,
-    pub profiles: Vec<Profile>,
+    pub profiles: Option<Vec<Profile>>,
 }
 
 #[derive(serde::Serialize)]
