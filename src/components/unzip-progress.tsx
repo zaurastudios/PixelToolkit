@@ -15,9 +15,12 @@ export function UnzipProgress() {
   listen<boolean>("unzip-started", (e) => setOpen(e.payload));
 
   async function init() {
-    const unlisten = await listen<string>("unzip-progress", (e) =>
-      setCurr((prev) => [...prev, e.payload]),
-    );
+    const unlisten = await listen<string>("unzip-progress", (e) => {
+      setCurr((prev) => [e.payload, ...prev]);
+      if (!e.payload) {
+        setCurr([]);
+      }
+    });
 
     return () => unlisten();
   }
@@ -47,6 +50,7 @@ export function UnzipProgress() {
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="pb-2">Progress</DialogTitle>
+
           <code className="break-all rounded-md border p-2 text-sm">
             <List
               height={200}

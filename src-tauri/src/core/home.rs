@@ -183,28 +183,34 @@ pub fn create_project(
         try_create_directory(&path, &["assets", "minecraft"]);
         let mc_path = path.join("assets").join("minecraft");
 
-        try_create_directory(&mc_path, &["blockstates"]);
-        try_create_directory(&mc_path, &["font"]);
-        try_create_directory(&mc_path, &["models", "block"]);
-        try_create_directory(&mc_path, &["models", "item"]);
-        try_create_directory(&mc_path, &["particles"]);
-        try_create_directory(&mc_path, &["shaders"]);
-        try_create_directory(&mc_path, &["sounds"]);
-        try_create_directory(&mc_path, &["texts"]);
-        try_create_directory(&mc_path, &["textures", "block"]);
-        try_create_directory(&mc_path, &["textures", "colormap"]);
-        try_create_directory(&mc_path, &["textures", "effect"]);
-        try_create_directory(&mc_path, &["textures", "entity"]);
-        try_create_directory(&mc_path, &["textures", "environment"]);
-        try_create_directory(&mc_path, &["textures", "font"]);
-        try_create_directory(&mc_path, &["textures", "gui"]);
-        try_create_directory(&mc_path, &["textures", "item"]);
-        try_create_directory(&mc_path, &["textures", "map"]);
-        try_create_directory(&mc_path, &["textures", "misc"]);
-        try_create_directory(&mc_path, &["textures", "mob_effect"]);
-        try_create_directory(&mc_path, &["textures", "models"]);
-        try_create_directory(&mc_path, &["textures", "painting"]);
-        try_create_directory(&mc_path, &["textures", "particle"]);
+        let dirs = [
+            "blockstates",
+            "font",
+            "models/block",
+            "models/item",
+            "particles",
+            "shaders",
+            "sounds",
+            "texts",
+            "textures/block",
+            "textures/colormap",
+            "textures/effect",
+            "textures/entity",
+            "textures/environment",
+            "textures/font",
+            "textures/gui",
+            "textures/item",
+            "textures/map",
+            "textures/misc",
+            "textures/mob_effect",
+            "textures/models",
+            "textures/painting",
+            "textures/particle",
+        ];
+
+        for dir in &dirs {
+            try_create_directory(&mc_path, &dir.split('/').collect::<Vec<_>>());
+        }
     }
     if create_realms_dirs {
         try_create_directory(&path, &["assets", "realms"]);
@@ -216,17 +222,13 @@ pub fn create_project(
         try_create_directory(&path, &["assets", "optifine"]);
         let of_path = path.join("assets").join("optifine");
 
-        try_create_directory(&of_path, &["anim"]);
-        try_create_directory(&of_path, &["cem"]);
-        try_create_directory(&of_path, &["cit"]);
-        try_create_directory(&of_path, &["colormap"]);
-        try_create_directory(&of_path, &["ctm"]);
-        try_create_directory(&of_path, &["font"]);
-        try_create_directory(&of_path, &["gui"]);
-        try_create_directory(&of_path, &["lightmap"]);
-        try_create_directory(&of_path, &["mob"]);
-        try_create_directory(&of_path, &["random"]);
-        try_create_directory(&of_path, &["sky"]);
+        let dirs = [
+            "anim", "cem", "cit", "colormap", "ctm", "font", "gui", "lightmap", "mob", "random",
+            "sky",
+        ];
+        for dir in &dirs {
+            try_create_directory(&of_path, &[dir]);
+        }
     }
 
     let path_clone = path.to_path_buf();
