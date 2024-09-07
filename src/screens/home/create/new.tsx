@@ -22,6 +22,8 @@ export const NewProject = ({
   setPath,
   error,
   setError,
+  zipPath,
+  setZipPath,
 }: NewProjectProps) => {
   const navigate = useNavigate();
 
@@ -36,6 +38,21 @@ export const NewProject = ({
     setPath(dir);
   }
 
+  async function selectZipArchive() {
+    const dir = await open({
+      multiple: false,
+      directory: false,
+      canCreateDirectories: true,
+      filters: [
+        {
+          name: "Choose zip archive",
+          extensions: ["zip"],
+        },
+      ],
+    });
+    setZipPath(dir);
+  }
+
   async function createProject() {
     try {
       const response: string = await invoke("create_project", {
@@ -45,6 +62,7 @@ export const NewProject = ({
         createMcDirs: newProjectInfo.createMcDirs,
         createRealmsDirs: newProjectInfo.createRealmsDirs,
         createOfDirs: newProjectInfo.createOfDirs,
+        importZipPath: zipPath,
       });
       const data: CreateProjectResponse = JSON.parse(response);
 
@@ -128,6 +146,7 @@ export const NewProject = ({
                 size="sm"
                 variant="secondary"
                 className="flex"
+                type="button"
               >
                 {!path ? "Open Folder" : "Change Folder"}
               </Button>
@@ -196,13 +215,38 @@ export const NewProject = ({
           </>
         )}
 
-        {path && step === MAX_STEPS && (
-          <div>
-            <Button type="submit" className="mt-4 w-full">
-              Create Project
-            </Button>
-          </div>
+        {step === 3 && (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="path">Zip Archive (optional)</Label>
+              <Textarea
+                id="path"
+                value={zipPath || undefined}
+                disabled={!!zipPath}
+                required
+                className={twMerge(
+                  "h-10 max-h-20 min-h-10 w-full max-w-[462px]",
+                  !zipPath && "sr-only",
+                )}
+              />
+              <Button
+                onClick={selectZipArchive}
+                size="sm"
+                variant="secondary"
+                className="flex"
+                type="button"
+              >
+                {!zipPath ? "Open Archive" : "Change Archive"}
+              </Button>
+            </div>
+          </>
         )}
+
+        <div>
+          <Button type="submit" className="mt-4 w-full">
+            Create Project
+          </Button>
+        </div>
       </form>
 
       <div className="mt-3 flex justify-between gap-2">
@@ -251,4 +295,7 @@ interface NewProjectProps {
 
   error: string | null;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
+
+  zipPath: string | null;
+  setZipPath: React.Dispatch<React.SetStateAction<string | null>>;
 }

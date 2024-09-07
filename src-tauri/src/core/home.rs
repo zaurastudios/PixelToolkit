@@ -1,5 +1,5 @@
 use serde_json::json;
-use std::fs;
+use std::fs::{self, File};
 use std::path::Path;
 
 use crate::core::utils::{get_config_dir, simple_toast};
@@ -106,6 +106,7 @@ pub fn create_project(
     create_mc_dirs: bool,
     create_realms_dirs: bool,
     create_of_dirs: bool,
+    import_zip_path: Option<String>,
     app: tauri::AppHandle,
 ) -> String {
     let path = Path::new(&dir_path);
@@ -241,6 +242,11 @@ pub fn create_project(
         try_create_directory(&of_path, &["sky"]);
     }
 
+    let zip_path = import_zip_path.unwrap_or("".to_string());
+    if zip_path.len() > 10 {
+        unzip_and_process(Path::new(&zip_path), &path);
+    }
+
     if let Err(e) = fs::write(&projects_yml_path, updated_content) {
         eprintln!("Failed to write project file: {}", e);
         simple_toast(format!("Error creating project: {}", e).to_string(), app);
@@ -258,4 +264,69 @@ pub fn create_project(
         message: Some(format!("Created project: {}", name).to_string()),
     })
     .unwrap_or_else(|_| "Error serializing response".to_string())
+}
+
+fn unzip_and_process(zip_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
+    let file = File::open(zip_path)?;
+    let mut archive = zip::ZipArchive::new(file)?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let file_name = file.mangled_name();
+        let out_path = dest_dir.join(&file_name);
+
+        if file_name.to_string_lossy().ends_with('/') {
+            fs::create_dir_all(&out_path)?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+
+            let mut out_file = File::create(&out_path)?;
+            std::io::copy(&mut file, &mut out_file)?;
+        }
+    }
+
+    for i in 0..archive.len() {
+        let file = archive.by_index(i)?;
+        let file_name = file.mangled_name();
+
+        if let Some(ext) = file_name.extension() {
+            if file_name.to_str() != Some("pack.png") && ext == "png" {
+                if !file_name.to_string_lossy().contains("_n.png")
+                    && !file_name.to_string_lossy().contains("_s.png")
+                {
+                    process_image(&file_name, dest_dir)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
+    let file_stem = image_path
+        .file_stem()
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
+    let image_dir = dest_dir.join(image_path.with_extension("")); // Create dir using image name
+
+    fs::create_dir_all(&image_dir)?;
+
+    let new_image_path = image_dir.join("color.png");
+    fs::rename(dest_dir.join(&image_path), new_image_path)?;
+
+    let parent_dir = dest_dir.join(image_path.parent().unwrap());
+
+    for suffix in &["_s.png", "_n.png"] {
+        let suffix_name = format!("{}{}", file_stem, suffix);
+        let suffix_file = parent_dir.join(&suffix_name);
+        if suffix_file.exists() {
+            fs::rename(suffix_file, image_dir.join(suffix_name))?;
+        }
+    }
+
+    Ok(())
 }

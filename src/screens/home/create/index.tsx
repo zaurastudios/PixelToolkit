@@ -18,6 +18,7 @@ export const CreateProject = () => {
   const [project, setProject] = useState<"new-project" | "import-existing">(
     "new-project",
   );
+
   const [path, setPath] = useState<string | null>(null);
   const [newProjectInfo, setNewProjectInfo] = useState<ProjectInfo>({
     name: null,
@@ -27,10 +28,11 @@ export const CreateProject = () => {
     createOfDirs: false,
   });
   const [error, setError] = useState<string | null>(null);
+  const [zipPath, setZipPath] = useState<string | null>(null);
 
   function reset() {
     setProject("new-project");
-    setPath("");
+    setPath("/home/zoc/Desktop/new");
     setNewProjectInfo({
       name: null,
       description: null,
@@ -39,6 +41,7 @@ export const CreateProject = () => {
       createOfDirs: false,
     });
     setError("");
+    setZipPath("/home/zoc/Downloads/SubtlePBR-v19-32x.zip");
   }
 
   return (
@@ -90,6 +93,8 @@ export const CreateProject = () => {
               setPath={setPath}
               error={error}
               setError={setError}
+              zipPath={zipPath}
+              setZipPath={setZipPath}
             />
           </TabsContent>
           <TabsContent value="import-existing"></TabsContent>
