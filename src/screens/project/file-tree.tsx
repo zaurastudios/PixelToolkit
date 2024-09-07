@@ -11,6 +11,7 @@ import { filterTree } from "@/lib/filter-trees";
 import { FileTree } from "@/types/project";
 import { TooltipPortal } from "@radix-ui/react-tooltip";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { FolderSync } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -114,6 +115,12 @@ export const FileTreeSidebar: React.FC<{
   const handleUpdateFileTree = async () => {
     await updateFileTree();
   };
+
+  listen<boolean>("unzip-started", (e) => {
+    if (!e.payload) {
+      updateFileTree();
+    }
+  });
 
   if (!fileTree) return null;
 
