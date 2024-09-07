@@ -328,5 +328,7 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
         }
     }
 
+    let _ = fs::write(image_dir.join("mat.yml"), "");
+
     Ok(())
 }
