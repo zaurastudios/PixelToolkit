@@ -64,8 +64,8 @@ export const FileTreeSidebar: React.FC<{
 
   useEffect(() => {
     async function init() {
+      const res: string = await invoke("get_dirs", { projectId: id });
       try {
-        const res: string = await invoke("get_dirs", { projectId: id });
         const resData: {
           file_tree: FileTree;
           redirect: boolean;

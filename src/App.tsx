@@ -1,5 +1,6 @@
 import "./global.scss";
 
+import { UnzipProgress } from "./components/unzip-progress";
 import { Toaster } from "@/components/ui/sonner";
 import { simpleToast } from "./lib/toast";
 
@@ -43,6 +44,7 @@ function App() {
         </Routes>
       </Router>
       <Toaster />
+      <UnzipProgress />
     </>
   );
 }

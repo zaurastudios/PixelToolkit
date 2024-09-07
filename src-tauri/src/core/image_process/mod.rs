@@ -51,6 +51,7 @@ pub fn save_channel_map_split(
     file_name: Option<String>,
     save_name_1: Option<String>,
     save_name_2: Option<String>,
+    scale: bool,
     invert: bool,
 ) -> Result<(), Box<dyn Error>> {
     let image_path = parent_dir.join(file_name.unwrap_or(String::from("color.png")));
@@ -79,11 +80,27 @@ pub fn save_channel_map_split(
         }
 
         if value >= start && value <= end {
-            channel_map_1.put_pixel(x, y, Luma([value - end]));
+            let scaled_value = if scale {
+                ((value - start) as f32 / (end - start) as f32 * 255.0) as u8
+            } else {
+                value
+            };
+
+            channel_map_1.put_pixel(x, y, Luma([scaled_value]));
             channel_map_2.put_pixel(x, y, Luma([0]));
         } else {
+            let scaled_value = if scale {
+                if value < start {
+                    ((value as f32 / start as f32) * 255.0) as u8
+                } else {
+                    (((value - end) as f32 / (255 - end) as f32) * 255.0) as u8
+                }
+            } else {
+                value
+            };
+
             channel_map_1.put_pixel(x, y, Luma([0]));
-            channel_map_2.put_pixel(x, y, Luma([value - end]));
+            channel_map_2.put_pixel(x, y, Luma([scaled_value]));
         }
     }
 

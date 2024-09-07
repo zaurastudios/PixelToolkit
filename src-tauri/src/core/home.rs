@@ -1,6 +1,7 @@
 use serde_json::json;
 use std::fs::{self, File};
 use std::path::Path;
+use tauri::Emitter;
 
 use crate::core::utils::{get_config_dir, simple_toast};
 
@@ -123,21 +124,6 @@ pub fn create_project(
             message: Some("Selected folder does not exist".to_string()),
         })
         .unwrap_or_else(|_| "Error serializing response".to_string());
-    } else if !path
-        .read_dir()
-        .map(|mut i| i.next().is_none())
-        .unwrap_or(false)
-    {
-        simple_toast(
-            "Error creating project: Select an empty folder".to_string(),
-            app,
-        );
-        return serde_json::to_string(&CreateProject {
-            success: false,
-            id: None,
-            message: Some("Select an empty folder".to_string()),
-        })
-        .unwrap_or_else(|_| "Error serializing response".to_string());
     }
 
     let config_dir = get_config_dir(&app);
@@ -243,10 +229,22 @@ pub fn create_project(
         try_create_directory(&of_path, &["sky"]);
     }
 
-    let zip_path = import_zip_path.unwrap_or("".to_string());
-    if zip_path.len() > 10 {
-        unzip_and_process(Path::new(&zip_path), &path);
-    }
+    let path_clone = path.to_path_buf();
+    let import_zip_path_clone = import_zip_path.clone();
+    let app_cloned = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let zip_path_str = import_zip_path_clone.unwrap_or("".to_string());
+        let zip_path = Path::new(&zip_path_str);
+
+        if zip_path.exists() {
+            #[allow(unused_must_use)]
+            {
+                app_cloned.emit("unzip-started", true);
+                let _ = unzip_and_process(zip_path, &path_clone, app_cloned.clone()).await;
+                app_cloned.emit("unzip-started", false);
+            }
+        }
+    });
 
     if let Err(e) = fs::write(&projects_yml_path, updated_content) {
         eprintln!("Failed to write project file: {}", e);
@@ -261,13 +259,17 @@ pub fn create_project(
 
     serde_json::to_string(&CreateProject {
         success: true,
-        id: None,
+        id: Some(project_id),
         message: Some(format!("Created project: {}", name).to_string()),
     })
     .unwrap_or_else(|_| "Error serializing response".to_string())
 }
 
-fn unzip_and_process(zip_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
+async fn unzip_and_process(
+    zip_path: &Path,
+    dest_dir: &Path,
+    app: tauri::AppHandle,
+) -> std::io::Result<()> {
     let file = File::open(zip_path)?;
     let mut archive = zip::ZipArchive::new(file)?;
 
@@ -297,7 +299,7 @@ fn unzip_and_process(zip_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
                 if !file_name.to_string_lossy().contains("_n.png")
                     && !file_name.to_string_lossy().contains("_s.png")
                 {
-                    process_image(&file_name, dest_dir)?;
+                    process_image(&file_name, dest_dir, app.clone())?;
                 }
             }
         }
@@ -306,7 +308,7 @@ fn unzip_and_process(zip_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
+fn process_image(image_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> std::io::Result<()> {
     let ignored_dirs = [
         "colormap",
         "effect",
@@ -339,12 +341,22 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
 
         let _ = save_channel_map(&image_dir, 3, None, None, false);
 
+        #[allow(unused_must_use)]
+        {
+            app.emit("unzip-progress", new_image_path);
+        }
+
         for suffix in &["_s.png", "_n.png"] {
             let suffix_name = format!("{}{}", file_stem, suffix);
             let suffix_file = parent_dir.join(&suffix_name);
             let suffix_path = image_dir.join(&suffix_name);
             if suffix_file.exists() {
                 fs::rename(suffix_file, &suffix_path)?;
+            }
+
+            #[allow(unused_must_use)]
+            {
+                app.emit("unzip-progress", &suffix_path);
             }
 
             if suffix == &"_n.png" {
@@ -394,6 +406,7 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
                     Some(suffix_name.to_owned()),
                     Some(String::from("f0.png")),
                     Some(String::from("hcm.png")),
+                    true,
                     false,
                 );
                 let _ = save_channel_map_split(
@@ -404,6 +417,7 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
                     Some(suffix_name.to_owned()),
                     Some(String::from("porosity.png")),
                     Some(String::from("sss.png")),
+                    true,
                     false,
                 );
 
