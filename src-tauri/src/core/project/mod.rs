@@ -1,6 +1,9 @@
 pub mod structs;
 
-use std::{fs, path::Path};
+use std::{
+    fs::{self},
+    path::Path,
+};
 
 use structs::FileTree;
 
@@ -13,9 +16,10 @@ use super::{
 struct GetDirsResponse {
     file_tree: Option<FileTree>,
     redirect: bool,
+    project_path: String,
 }
 
-fn build_file_tree(path: &Path) -> FileTree {
+fn build_file_tree(path: &Path) -> Option<FileTree> {
     let name = path.file_name().unwrap().to_str().unwrap().to_string();
     let mut is_mat = None;
     let mut children = Vec::new();
@@ -26,22 +30,35 @@ fn build_file_tree(path: &Path) -> FileTree {
 
         if has_mat_file {
             is_mat = Some(true);
+            Some(FileTree {
+                name,
+                is_mat,
+                children,
+            })
         } else {
             if let Ok(entries) = fs::read_dir(path) {
                 for entry in entries.filter_map(Result::ok) {
                     let child_path = entry.path();
                     if child_path.is_dir() {
-                        children.push(build_file_tree(&child_path));
+                        if let Some(child_tree) = build_file_tree(&child_path) {
+                            children.push(child_tree);
+                        }
                     }
                 }
             }
-        }
-    }
 
-    FileTree {
-        name,
-        is_mat,
-        children,
+            if children.is_empty() {
+                None
+            } else {
+                Some(FileTree {
+                    name,
+                    is_mat,
+                    children,
+                })
+            }
+        }
+    } else {
+        None
     }
 }
 
@@ -65,10 +82,15 @@ pub fn get_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, Str
         return Err("Project file not found".to_string());
     }
 
-    let file_tree = build_file_tree(&path.join("assets"));
+    let file_tree = build_file_tree(path).unwrap_or_else(|| FileTree {
+        name: "".to_string(),
+        is_mat: None,
+        children: Vec::new(),
+    });
     let response = GetDirsResponse {
         file_tree: Some(file_tree),
         redirect: false,
+        project_path: project.path.clone(),
     };
 
     serde_json::to_string(&response).map_err(|_| "Error serializing response".to_string())
@@ -93,16 +115,17 @@ fn update_project_modified_date(project_id: String, app: &tauri::AppHandle) -> R
         .map_err(|e| format!("Failed to write project file: {}", e))
 }
 
-fn update_file_tree(existing: &mut FileTree, path: &Path) {
+fn update_file_tree(existing: &mut FileTree, path: &Path) -> bool {
     if path.is_dir() {
         let mat_files = ["mat.yml", "mat.yaml", "material.yml", "material.yaml"];
         let has_mat_file = mat_files.iter().any(|&file| path.join(file).exists());
 
         if has_mat_file {
-            if existing.is_mat.is_none() {
-                existing.is_mat = Some(true);
-            }
+            existing.is_mat = Some(true);
+            true
         } else {
+            let mut has_valid_child = false;
+
             if let Ok(entries) = fs::read_dir(path) {
                 for entry in entries.filter_map(Result::ok) {
                     let child_path = entry.path();
@@ -113,17 +136,32 @@ fn update_file_tree(existing: &mut FileTree, path: &Path) {
                             .to_str()
                             .unwrap()
                             .to_string();
+
                         if let Some(existing_child) =
                             existing.children.iter_mut().find(|c| c.name == child_name)
                         {
-                            update_file_tree(existing_child, &child_path);
+                            if update_file_tree(existing_child, &child_path) {
+                                has_valid_child = true;
+                            }
                         } else {
-                            existing.children.push(build_file_tree(&child_path));
+                            if let Some(new_child) = build_file_tree(&child_path) {
+                                existing.children.push(new_child);
+                                has_valid_child = true;
+                            }
                         }
                     }
                 }
             }
+
+            // Remove children that are no longer valid
+            existing
+                .children
+                .retain(|child| child.is_mat.is_some() || !child.children.is_empty());
+
+            has_valid_child
         }
+    } else {
+        false
     }
 }
 
@@ -147,13 +185,18 @@ pub fn update_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, 
         return Err("Project file not found".to_string());
     }
 
-    let assets_path = path.join("assets");
-    let mut existing_tree = build_file_tree(&assets_path);
-    update_file_tree(&mut existing_tree, &assets_path);
+    let mut existing_tree = build_file_tree(path).unwrap_or_else(|| FileTree {
+        name: "".to_string(),
+        is_mat: None,
+        children: Vec::new(),
+    });
+
+    update_file_tree(&mut existing_tree, &path);
 
     let response = GetDirsResponse {
         file_tree: Some(existing_tree),
         redirect: false,
+        project_path: project.path.clone(),
     };
 
     serde_json::to_string(&response).map_err(|_| "Error serializing response".to_string())
