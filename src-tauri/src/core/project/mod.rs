@@ -47,6 +47,8 @@ fn build_file_tree(path: &Path) -> Option<FileTree> {
                 }
             }
 
+            children.sort_by(|a, b| a.name.cmp(&b.name));
+
             if children.is_empty() {
                 None
             } else {
@@ -115,56 +117,6 @@ fn update_project_modified_date(project_id: String, app: &tauri::AppHandle) -> R
         .map_err(|e| format!("Failed to write project file: {}", e))
 }
 
-fn update_file_tree(existing: &mut FileTree, path: &Path) -> bool {
-    if path.is_dir() {
-        let mat_files = ["mat.yml", "mat.yaml", "material.yml", "material.yaml"];
-        let has_mat_file = mat_files.iter().any(|&file| path.join(file).exists());
-
-        if has_mat_file {
-            existing.is_mat = Some(true);
-            true
-        } else {
-            let mut has_valid_child = false;
-
-            if let Ok(entries) = fs::read_dir(path) {
-                for entry in entries.filter_map(Result::ok) {
-                    let child_path = entry.path();
-                    if child_path.is_dir() {
-                        let child_name = child_path
-                            .file_name()
-                            .unwrap()
-                            .to_str()
-                            .unwrap()
-                            .to_string();
-
-                        if let Some(existing_child) =
-                            existing.children.iter_mut().find(|c| c.name == child_name)
-                        {
-                            if update_file_tree(existing_child, &child_path) {
-                                has_valid_child = true;
-                            }
-                        } else {
-                            if let Some(new_child) = build_file_tree(&child_path) {
-                                existing.children.push(new_child);
-                                has_valid_child = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Remove children that are no longer valid
-            existing
-                .children
-                .retain(|child| child.is_mat.is_some() || !child.children.is_empty());
-
-            has_valid_child
-        }
-    } else {
-        false
-    }
-}
-
 #[tauri::command]
 pub fn update_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, String> {
     let mut projects = get_projects_vec(&app);
@@ -176,25 +128,16 @@ pub fn update_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, 
             "Project not found".to_string()
         })?;
 
-    update_project_modified_date(project_id.clone(), &app)?;
-
     let path = Path::new(&project.path);
-    let project_yml_path = path.join("project.yml");
-    if !project_yml_path.exists() {
-        remove_project(project_id, app);
-        return Err("Project file not found".to_string());
-    }
 
-    let mut existing_tree = build_file_tree(path).unwrap_or_else(|| FileTree {
+    let file_tree = build_file_tree(path).unwrap_or_else(|| FileTree {
         name: "".to_string(),
         is_mat: None,
         children: Vec::new(),
     });
 
-    update_file_tree(&mut existing_tree, &path);
-
     let response = GetDirsResponse {
-        file_tree: Some(existing_tree),
+        file_tree: Some(file_tree),
         redirect: false,
         project_path: project.path.clone(),
     };

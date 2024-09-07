@@ -119,7 +119,10 @@ const EntryRow: React.FC<EntryRowProps> = React.memo(
     };
 
     return (
-      <div className={twMerge("my-1", entry.isMat && "border-l")} style={style}>
+      <div
+        className={twMerge("my-1", entry.isMat && "border-l pl-0.5")}
+        style={style}
+      >
         <Button
           size="sm"
           onClick={handleClick}

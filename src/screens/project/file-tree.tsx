@@ -1,41 +1,51 @@
 import { FileTreeFolder } from "@/components/file-tree-buttons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { filterTree } from "@/lib/filter-trees";
 import { FileTree } from "@/types/project";
+import { TooltipPortal } from "@radix-ui/react-tooltip";
+import { FolderSync } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDebounce } from "react-use";
-import {} from "@/lib/filter-trees";
-import { Input } from "@/components/ui/input";
 
-export const FileTreeSidebar = ({
-  fileTree,
-  projectPath,
-}: {
+export const FileTreeSidebar: React.FC<{
   fileTree: FileTree;
   projectPath: string;
-}) => {
+  updateFileTree: () => Promise<void>;
+}> = ({ fileTree, projectPath, updateFileTree }) => {
   const [filteredFileTree, setFilteredFileTree] = useState(fileTree);
   const [query, setQuery] = useState<string>("");
 
-  const [_, cancel] = useDebounce(
+  useEffect(() => {
+    setFilteredFileTree(fileTree);
+  }, [fileTree]);
+
+  useDebounce(
     () => {
       if (query) {
-        const filteredTree = filterTree(filteredFileTree, query);
-        if (filteredTree) {
-          setFilteredFileTree(filteredTree);
-        } else {
-          setFilteredFileTree(fileTree);
-        }
+        const filteredTree = filterTree(fileTree, query);
+        setFilteredFileTree(filteredTree || fileTree);
       } else {
         setFilteredFileTree(fileTree);
       }
     },
-    0,
-    [query],
+    250,
+    [query, fileTree],
   );
+
+  const handleUpdateFileTree = async () => {
+    await updateFileTree();
+  };
 
   return (
     <>
-      <div className="sticky top-0 z-10 flex gap-2 border-b bg-background p-1">
+      <div className="sticky top-0 z-10 flex gap-1 border-b bg-background p-1">
         <Input
           type="text"
           placeholder="Search..."
@@ -44,8 +54,23 @@ export const FileTreeSidebar = ({
           onChange={(e) => setQuery(e.currentTarget.value)}
           className="min-w-none z-10 w-auto max-w-none grow"
         />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleUpdateFileTree}
+              >
+                <FolderSync className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipPortal>
+              <TooltipContent>Resync Folder</TooltipContent>
+            </TooltipPortal>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-
       <FileTreeFolder
         fileTree={filteredFileTree}
         query={query}

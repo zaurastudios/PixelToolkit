@@ -20,6 +20,35 @@ export function ProjectPage() {
   } | null>(null);
   const fileTree = data?.fileTree;
 
+  async function updateFileTree() {
+    try {
+      const res: string = await invoke("update_dirs", { projectId: id });
+      const resData: {
+        file_tree: FileTree;
+        redirect: boolean;
+        project_path: string;
+      } = JSON.parse(res);
+      if (typeof resData === "string") {
+        navigate("/");
+        throw new Error("404");
+      }
+
+      if (resData.redirect) {
+        navigate("/");
+      } else {
+        setData({
+          fileTree: resData.file_tree,
+          redirect: resData.redirect,
+          projectPath: resData.project_path,
+        });
+      }
+    } catch (err) {
+      navigate("/");
+      console.error("Failed to open project:", String(err));
+      toast("Failed to open project:" + String(err));
+    }
+  }
+
   useEffect(() => {
     async function init() {
       try {
@@ -72,6 +101,7 @@ export function ProjectPage() {
                   )!,
                 }}
                 projectPath={data?.projectPath!}
+                updateFileTree={updateFileTree}
               />
             ) : null}
           </ResizablePanel>
