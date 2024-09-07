@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::core::utils::{get_config_dir, simple_toast};
 
-use super::image_process::{save_channel_map, save_channel_map_split};
+use super::image_process::{save_channel_map, save_channel_map_split, save_normal};
 use super::utils::try_create_directory;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -361,6 +361,12 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
                     Some(suffix_name.to_owned()),
                     Some(String::from("height.png")),
                     false,
+                );
+
+                let _ = save_normal(
+                    &image_dir,
+                    Some(suffix_name.to_owned()),
+                    Some(String::from("normal.png")),
                 );
 
                 let _ = fs::remove_file(&suffix_path);

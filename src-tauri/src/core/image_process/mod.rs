@@ -1,4 +1,4 @@
-use image::{GenericImageView, ImageBuffer, Luma};
+use image::{GenericImageView, ImageBuffer, Luma, Rgba};
 use std::error::Error;
 use std::path::Path;
 
@@ -79,11 +79,11 @@ pub fn save_channel_map_split(
         }
 
         if value >= start && value <= end {
-            channel_map_1.put_pixel(x, y, Luma([value]));
+            channel_map_1.put_pixel(x, y, Luma([value - end]));
             channel_map_2.put_pixel(x, y, Luma([0]));
         } else {
             channel_map_1.put_pixel(x, y, Luma([0]));
-            channel_map_2.put_pixel(x, y, Luma([value]));
+            channel_map_2.put_pixel(x, y, Luma([value - end]));
         }
     }
 
@@ -105,6 +105,45 @@ pub fn save_channel_map_split(
                 e,
                 image_path.to_string_lossy()
             );
+            e
+        })?;
+
+    Ok(())
+}
+
+pub fn save_normal(
+    parent_dir: &Path,
+    file_name: Option<String>,
+    save_name: Option<String>,
+) -> Result<(), Box<dyn Error>> {
+    let image_path = parent_dir.join(file_name.unwrap_or(String::from("color.png")));
+    let save_file_name = save_name.unwrap_or(String::from("opacity.png"));
+
+    let img = image::open(&image_path).map_err(|e| {
+        eprintln!("Error opening image: {}", e);
+        eprintln!(
+            "Error opening image path and file name: {}\n{}",
+            image_path.to_string_lossy(),
+            save_file_name
+        );
+        e
+    })?;
+
+    let (width, height) = img.dimensions();
+    let mut normal_map = ImageBuffer::new(width, height);
+
+    for (x, y, pixel) in img.pixels() {
+        let mut value = pixel.0;
+        value[2] = 255;
+        value[3] = 255;
+
+        normal_map.put_pixel(x, y, Rgba(value));
+    }
+
+    normal_map
+        .save(parent_dir.join(save_file_name))
+        .map_err(|e| {
+            eprintln!("Error saving alpha map: {}", e);
             e
         })?;
 
