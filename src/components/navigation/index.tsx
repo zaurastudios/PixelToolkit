@@ -81,6 +81,13 @@ export const Navigation = () => {
                 <MenubarShortcut className="font-mono">^⇧F</MenubarShortcut>
               </MenubarItem>
             )}
+            <MenubarSeparator />
+
+            <MenubarItem onClick={toggleOpenPreferences}>
+              Preferences{" "}
+              <MenubarShortcut className="font-mono">^,</MenubarShortcut>
+            </MenubarItem>
+            <MenubarSeparator />
 
             <MenubarItem onClick={closeWindow}>
               Quit <MenubarShortcut className="font-mono">^Q</MenubarShortcut>
@@ -88,16 +95,24 @@ export const Navigation = () => {
           </MenubarContent>
         </MenubarMenu>
 
-        <MenubarMenu>
-          <MenubarTrigger className="px-1 py-0">Edit</MenubarTrigger>
-          <MenubarContent>
-            {pathname !== "/" && <MenubarSeparator />}
-            <MenubarItem onClick={toggleOpenPreferences}>
-              Preferences{" "}
-              <MenubarShortcut className="font-mono">^,</MenubarShortcut>
-            </MenubarItem>
-          </MenubarContent>
-        </MenubarMenu>
+        {pathname.includes("project") && (
+          <>
+            <MenubarMenu>
+              <MenubarTrigger className="px-1 py-0">Project</MenubarTrigger>
+              <MenubarContent></MenubarContent>
+            </MenubarMenu>
+
+            <MenubarMenu>
+              <MenubarTrigger className="px-1 py-0">Pack</MenubarTrigger>
+              <MenubarContent></MenubarContent>
+            </MenubarMenu>
+
+            <MenubarMenu>
+              <MenubarTrigger className="px-1 py-0">Material</MenubarTrigger>
+              <MenubarContent></MenubarContent>
+            </MenubarMenu>
+          </>
+        )}
       </Menubar>
       <Preferences open={openPreferences} onOpenChange={setOpenPreferences} />
     </nav>

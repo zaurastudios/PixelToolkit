@@ -1,14 +1,14 @@
 pub mod structs;
 
 use std::{
-    fs::{self},
+    fs::{self, File},
     path::Path,
 };
 
 use structs::FileTree;
 
 use super::{
-    home::{get_projects_vec, remove_project},
+    home::{get_projects_vec, process_image, remove_project},
     utils::get_config_dir,
 };
 
@@ -143,4 +143,54 @@ pub fn update_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, 
     };
 
     serde_json::to_string(&response).map_err(|_| "Error serializing response".to_string())
+}
+
+#[tauri::command]
+pub async fn import_archive_overwrite(
+    zip_path: String,
+    project_id: String,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let file = File::open(zip_path).map_err(|e| e.to_string())?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+    let mut projects = get_projects_vec(&app);
+    let project = projects
+        .iter_mut()
+        .find(|p| p.id == project_id)
+        .ok_or_else(|| {
+            remove_project(project_id.clone(), app.clone());
+            "Project not found".to_string()
+        })?;
+    let dest_dir = Path::new(&project.path);
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
+        let file_name = file.mangled_name();
+        let out_path = dest_dir.join(&file_name);
+        if file_name.to_string_lossy().ends_with('/') {
+            fs::create_dir_all(&out_path).map_err(|e| e.to_string())?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let mut out_file = File::create(&out_path).map_err(|e| e.to_string())?;
+            std::io::copy(&mut file, &mut out_file).map_err(|e| e.to_string())?;
+        }
+    }
+
+    for i in 0..archive.len() {
+        let file = archive.by_index(i).map_err(|e| e.to_string())?;
+        let file_name = file.mangled_name();
+        if let Some(ext) = file_name.extension() {
+            if file_name.to_str() != Some("pack.png") && ext == "png" {
+                if !file_name.to_string_lossy().contains("_n.png")
+                    && !file_name.to_string_lossy().contains("_s.png")
+                {
+                    let _ = process_image(&file_name, dest_dir, app.clone());
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

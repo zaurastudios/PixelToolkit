@@ -310,7 +310,11 @@ async fn unzip_and_process(
     Ok(())
 }
 
-fn process_image(image_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> std::io::Result<()> {
+pub fn process_image(
+    image_path: &Path,
+    dest_dir: &Path,
+    app: tauri::AppHandle,
+) -> std::io::Result<()> {
     let ignored_dirs = [
         "colormap",
         "effect",
