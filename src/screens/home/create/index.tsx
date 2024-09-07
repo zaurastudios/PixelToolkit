@@ -32,7 +32,7 @@ export const CreateProject = () => {
 
   function reset() {
     setProject("new-project");
-    setPath("/home/zoc/Desktop/new");
+    setPath("");
     setNewProjectInfo({
       name: null,
       description: null,
@@ -41,7 +41,7 @@ export const CreateProject = () => {
       createOfDirs: false,
     });
     setError("");
-    setZipPath("/home/zoc/Downloads/SubtlePBR-v19-32x.zip");
+    setZipPath("");
   }
 
   return (
