@@ -3,83 +3,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { FileTree } from "@/types/project";
-import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
+import { useParams } from "react-router-dom";
 import { FileTreeSidebar } from "./file-tree";
 
 export function ProjectPage() {
-  const navigate = useNavigate();
   const { id } = useParams();
-  const [data, setData] = useState<{
-    fileTree: FileTree;
-    redirect: boolean;
-    projectPath: string;
-  } | null>(null);
-  const fileTree = data?.fileTree;
-
-  async function updateFileTree() {
-    try {
-      const res: string = await invoke("update_dirs", { projectId: id });
-      const resData: {
-        file_tree: FileTree;
-        redirect: boolean;
-        project_path: string;
-      } = JSON.parse(res);
-      if (typeof resData === "string") {
-        navigate("/");
-        throw new Error("404");
-      }
-
-      if (resData.redirect) {
-        navigate("/");
-      } else {
-        setData({
-          fileTree: resData.file_tree,
-          redirect: resData.redirect,
-          projectPath: resData.project_path,
-        });
-      }
-    } catch (err) {
-      navigate("/");
-      console.error("Failed to open project:", String(err));
-      toast("Failed to open project:" + String(err));
-    }
-  }
-
-  useEffect(() => {
-    async function init() {
-      try {
-        const res: string = await invoke("get_dirs", { projectId: id });
-        const resData: {
-          file_tree: FileTree;
-          redirect: boolean;
-          project_path: string;
-        } = JSON.parse(res);
-        if (typeof resData === "string") {
-          navigate("/");
-          throw new Error("404");
-        }
-
-        if (resData.redirect) {
-          navigate("/");
-        } else {
-          setData({
-            fileTree: resData.file_tree,
-            redirect: resData.redirect,
-            projectPath: resData.project_path,
-          });
-        }
-      } catch (err) {
-        navigate("/");
-        console.error("Failed to open project:", String(err));
-        toast("Failed to open project:" + String(err));
-      }
-    }
-    init();
-  }, [id]);
 
   return (
     <>
@@ -92,18 +20,7 @@ export function ProjectPage() {
             maxSize={22}
             className="!overflow-scroll"
           >
-            {fileTree?.children.length && fileTree.name ? (
-              <FileTreeSidebar
-                fileTree={{
-                  ...fileTree!,
-                  children: fileTree?.children.filter(
-                    (e) => e.name === "assets",
-                  )!,
-                }}
-                projectPath={data?.projectPath!}
-                updateFileTree={updateFileTree}
-              />
-            ) : null}
+            <FileTreeSidebar projectId={id!} />
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel className="bg-foreground/5">asd</ResizablePanel>

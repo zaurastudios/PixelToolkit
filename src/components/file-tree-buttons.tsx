@@ -107,7 +107,7 @@ type EntryRowProps = {
 
 const EntryRow: React.FC<EntryRowProps> = React.memo(
   ({ entry, toggleNode, style }) => {
-    const dirPath = entry.path + (entry.isMat ? "/mat.yml" : "");
+    const entryPath = entry.path + (entry.isMat ? "/mat.yml" : "");
 
     const handleClick = () => {
       if (!entry.isMat) {
