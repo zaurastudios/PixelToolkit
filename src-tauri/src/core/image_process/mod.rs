@@ -2,8 +2,9 @@ use image::{GenericImageView, ImageBuffer, Luma};
 use std::error::Error;
 use std::path::Path;
 
-pub fn save_alpha(
+pub fn save_channel_map(
     parent_dir: &Path,
+    channel: usize, // 0: red, 1: green, 2: blue, 3: alpha
     file_name: Option<String>,
     save_name: Option<String>,
     invert: bool,
@@ -22,20 +23,88 @@ pub fn save_alpha(
     })?;
 
     let (width, height) = img.dimensions();
-    let mut alpha_map = ImageBuffer::new(width, height);
+    let mut channel_map = ImageBuffer::new(width, height);
 
     for (x, y, pixel) in img.pixels() {
-        let mut alpha = pixel.0[3];
+        let mut value = pixel.0[channel];
         if invert {
-            alpha = 255 - alpha;
+            value = 255 - value;
         }
-        alpha_map.put_pixel(x, y, Luma([alpha]));
+        channel_map.put_pixel(x, y, Luma([value]));
     }
 
-    alpha_map
+    channel_map
         .save(parent_dir.join(save_file_name))
         .map_err(|e| {
             eprintln!("Error saving alpha map: {}", e);
+            e
+        })?;
+
+    Ok(())
+}
+
+pub fn save_channel_map_split(
+    parent_dir: &Path,
+    channel: usize, // 0: red, 1: green, 2: blue, 3: alpha
+    start: u8,
+    end: u8,
+    file_name: Option<String>,
+    save_name_1: Option<String>,
+    save_name_2: Option<String>,
+    invert: bool,
+) -> Result<(), Box<dyn Error>> {
+    let image_path = parent_dir.join(file_name.unwrap_or(String::from("color.png")));
+    let save_file_name_1 = save_name_1.unwrap_or(String::from("opacity.png"));
+    let save_file_name_2 = save_name_2.unwrap_or(String::from("opacity.png"));
+
+    let img = image::open(&image_path).map_err(|e| {
+        eprintln!("Error opening image: {}", e);
+        eprintln!(
+            "Error opening image path and file name: {}\n{}\n{}",
+            image_path.to_string_lossy(),
+            save_file_name_1,
+            save_file_name_2
+        );
+        e
+    })?;
+
+    let (width, height) = img.dimensions();
+    let mut channel_map_1 = ImageBuffer::new(width, height);
+    let mut channel_map_2 = ImageBuffer::new(width, height);
+
+    for (x, y, pixel) in img.pixels() {
+        let mut value = pixel.0[channel];
+        if invert {
+            value = 255 - value;
+        }
+
+        if value >= start && value <= end {
+            channel_map_1.put_pixel(x, y, Luma([value]));
+            channel_map_2.put_pixel(x, y, Luma([0]));
+        } else {
+            channel_map_1.put_pixel(x, y, Luma([0]));
+            channel_map_2.put_pixel(x, y, Luma([value]));
+        }
+    }
+
+    channel_map_1
+        .save(parent_dir.join(save_file_name_1))
+        .map_err(|e| {
+            println!(
+                "Failed to save split channel map 1: {}\n{}",
+                e,
+                image_path.to_string_lossy()
+            );
+            e
+        })?;
+    channel_map_2
+        .save(parent_dir.join(save_file_name_2))
+        .map_err(|e| {
+            println!(
+                "Failed to save split channel map 2: {}\n{}",
+                e,
+                image_path.to_string_lossy()
+            );
             e
         })?;
 

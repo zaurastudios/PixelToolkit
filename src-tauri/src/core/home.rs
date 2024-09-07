@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::core::utils::{get_config_dir, simple_toast};
 
-use super::image_process::save_alpha;
+use super::image_process::{save_channel_map, save_channel_map_split};
 use super::utils::try_create_directory;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -337,31 +337,71 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
 
         let parent_dir = dest_dir.join(image_path.parent().unwrap());
 
-        if let Err(e) = save_alpha(&image_dir, None, None, false) {
-            eprintln!("Error: {}", e);
-        }
+        let _ = save_channel_map(&image_dir, 3, None, None, false);
 
         for suffix in &["_s.png", "_n.png"] {
             let suffix_name = format!("{}{}", file_stem, suffix);
             let suffix_file = parent_dir.join(&suffix_name);
+            let suffix_path = image_dir.join(&suffix_name);
             if suffix_file.exists() {
-                fs::rename(suffix_file, image_dir.join(&suffix_name))?;
+                fs::rename(suffix_file, &suffix_path)?;
             }
 
             if suffix == &"_n.png" {
-                let _ = save_alpha(
+                let _ = save_channel_map(
                     &image_dir,
-                    Some(suffix_name),
+                    2,
+                    Some(suffix_name.to_owned()),
+                    Some(String::from("ao.png")),
+                    false,
+                );
+                let _ = save_channel_map(
+                    &image_dir,
+                    3,
+                    Some(suffix_name.to_owned()),
                     Some(String::from("height.png")),
                     false,
                 );
+
+                let _ = fs::remove_file(&suffix_path);
             } else if suffix == &"_s.png" {
-                let _ = save_alpha(
+                let _ = save_channel_map(
                     &image_dir,
+                    0,
+                    Some(suffix_name.to_owned()),
+                    Some(String::from("smooth.png")),
+                    true,
+                );
+                let _ = save_channel_map(
+                    &image_dir,
+                    3,
                     Some(suffix_name.to_owned()),
                     Some(String::from("emissive.png")),
                     true,
                 );
+
+                let _ = save_channel_map_split(
+                    &image_dir,
+                    1,
+                    0,
+                    229,
+                    Some(suffix_name.to_owned()),
+                    Some(String::from("f0.png")),
+                    Some(String::from("hcm.png")),
+                    false,
+                );
+                let _ = save_channel_map_split(
+                    &image_dir,
+                    3,
+                    0,
+                    127,
+                    Some(suffix_name.to_owned()),
+                    Some(String::from("porosity.png")),
+                    Some(String::from("sss.png")),
+                    false,
+                );
+
+                let _ = fs::remove_file(&suffix_path);
             }
         }
 
