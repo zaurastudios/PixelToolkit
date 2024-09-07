@@ -306,29 +306,46 @@ fn unzip_and_process(zip_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
 }
 
 fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
+    let ignored_dirs = [
+        "colormap",
+        "effect",
+        "environment",
+        "font",
+        "gui",
+        "map",
+        "misc",
+        "mob_effect",
+        "models",
+    ];
+
     let file_stem = image_path
         .file_stem()
         .unwrap()
         .to_string_lossy()
         .to_string();
-    let image_dir = dest_dir.join(image_path.with_extension("")); // Create dir using image name
+    let image_dir = dest_dir.join(image_path.with_extension(""));
 
-    fs::create_dir_all(&image_dir)?;
+    if ignored_dirs
+        .iter()
+        .all(|dir| !image_dir.to_string_lossy().contains(dir))
+    {
+        fs::create_dir_all(&image_dir)?;
 
-    let new_image_path = image_dir.join("color.png");
-    fs::rename(dest_dir.join(&image_path), new_image_path)?;
+        let new_image_path = image_dir.join("color.png");
+        fs::rename(dest_dir.join(&image_path), new_image_path)?;
 
-    let parent_dir = dest_dir.join(image_path.parent().unwrap());
+        let parent_dir = dest_dir.join(image_path.parent().unwrap());
 
-    for suffix in &["_s.png", "_n.png"] {
-        let suffix_name = format!("{}{}", file_stem, suffix);
-        let suffix_file = parent_dir.join(&suffix_name);
-        if suffix_file.exists() {
-            fs::rename(suffix_file, image_dir.join(suffix_name))?;
+        for suffix in &["_s.png", "_n.png"] {
+            let suffix_name = format!("{}{}", file_stem, suffix);
+            let suffix_file = parent_dir.join(&suffix_name);
+            if suffix_file.exists() {
+                fs::rename(suffix_file, image_dir.join(suffix_name))?;
+            }
         }
-    }
 
-    let _ = fs::write(image_dir.join("mat.yml"), "");
+        let _ = fs::write(image_dir.join("mat.yml"), "");
+    }
 
     Ok(())
 }
