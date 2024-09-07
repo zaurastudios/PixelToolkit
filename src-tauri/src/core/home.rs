@@ -4,6 +4,7 @@ use std::path::Path;
 
 use crate::core::utils::{get_config_dir, simple_toast};
 
+use super::image_process::save_alpha;
 use super::utils::try_create_directory;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -332,15 +333,35 @@ fn process_image(image_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
         fs::create_dir_all(&image_dir)?;
 
         let new_image_path = image_dir.join("color.png");
-        fs::rename(dest_dir.join(&image_path), new_image_path)?;
+        fs::rename(dest_dir.join(&image_path), &new_image_path)?;
 
         let parent_dir = dest_dir.join(image_path.parent().unwrap());
+
+        if let Err(e) = save_alpha(&image_dir, None, None, false) {
+            eprintln!("Error: {}", e);
+        }
 
         for suffix in &["_s.png", "_n.png"] {
             let suffix_name = format!("{}{}", file_stem, suffix);
             let suffix_file = parent_dir.join(&suffix_name);
             if suffix_file.exists() {
-                fs::rename(suffix_file, image_dir.join(suffix_name))?;
+                fs::rename(suffix_file, image_dir.join(&suffix_name))?;
+            }
+
+            if suffix == &"_n.png" {
+                let _ = save_alpha(
+                    &image_dir,
+                    Some(suffix_name),
+                    Some(String::from("height.png")),
+                    false,
+                );
+            } else if suffix == &"_s.png" {
+                let _ = save_alpha(
+                    &image_dir,
+                    Some(suffix_name.to_owned()),
+                    Some(String::from("emissive.png")),
+                    true,
+                );
             }
         }
 
