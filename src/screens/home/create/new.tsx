@@ -242,13 +242,11 @@ export const NewProject = ({
           </>
         )}
 
-        {path && step === MAX_STEPS && (
-          <div>
-            <Button type="submit" className="mt-4 w-full">
-              Create Project
-            </Button>
-          </div>
-        )}
+        <div>
+          <Button type="submit" className="mt-4 w-full">
+            Create Project
+          </Button>
+        </div>
       </form>
 
       <div className="mt-3 flex justify-between gap-2">

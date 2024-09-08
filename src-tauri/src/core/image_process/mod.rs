@@ -1,141 +1,187 @@
 use image::{GenericImageView, ImageBuffer, Luma, Rgba};
+use rayon::prelude::*;
 use std::error::Error;
 use std::path::Path;
 
 pub fn save_channel_map(
-    parent_dir: &Path,
-    channel: usize, // 0: red, 1: green, 2: blue, 3: alpha
-    file_name: Option<String>,
-    save_name: Option<String>,
+    material_dir: &Path,
+    channel: usize,
+    image_path: &Path,
+    save_name: String,
     invert: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let image_path = parent_dir.join(file_name.unwrap_or(String::from("color.png")));
-    let save_file_name = save_name.unwrap_or(String::from("opacity.png"));
-
-    let img = image::open(&image_path).map_err(|e| {
+    let img = image::open(image_path).map_err(|e| {
         eprintln!("Error opening image: {}", e);
         eprintln!(
             "Error opening image path and file name: {}\n{}",
             image_path.to_string_lossy(),
-            save_file_name
+            save_name
         );
         e
     })?;
 
-    let (width, height) = img.dimensions();
-    let mut channel_map = ImageBuffer::new(width, height);
+    if channel == 3 {
+        let has_transparency = if invert {
+            img.pixels().any(|(_, _, pixel)| 255 - pixel[3] > 0)
+        } else {
+            img.pixels().any(|(_, _, pixel)| pixel[3] < 255)
+        };
 
-    for (x, y, pixel) in img.pixels() {
-        let mut value = pixel.0[channel];
-        if invert {
-            value = 255 - value;
+        if !has_transparency {
+            return Ok(());
         }
-        channel_map.put_pixel(x, y, Luma([value]));
     }
 
+    let (width, height) = img.dimensions();
+    let mut channel_map: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::new(width, height);
+
     channel_map
-        .save(parent_dir.join(save_file_name))
+        .par_chunks_exact_mut(width as usize)
+        .enumerate()
+        .for_each(|(y, row)| {
+            for (x, pixel) in row.iter_mut().enumerate() {
+                let src_pixel = img.get_pixel(x as u32, y as u32);
+                let value = if invert {
+                    255 - src_pixel[channel]
+                } else {
+                    src_pixel[channel]
+                };
+                *pixel = value;
+            }
+        });
+
+    channel_map
+        .save(material_dir.join(save_name))
         .map_err(|e| {
-            eprintln!("Error saving alpha map: {}", e);
+            eprintln!("Error saving channel map: {}", e);
             e
         })?;
 
     Ok(())
 }
 
-pub fn save_channel_map_split(
-    parent_dir: &Path,
-    channel: usize, // 0: red, 1: green, 2: blue, 3: alpha
-    start: u8,
-    end: u8,
-    file_name: Option<String>,
-    save_name_1: Option<String>,
-    save_name_2: Option<String>,
-    scale: bool,
-    invert: bool,
-) -> Result<(), Box<dyn Error>> {
-    let image_path = parent_dir.join(file_name.unwrap_or(String::from("color.png")));
-    let save_file_name_1 = save_name_1.unwrap_or(String::from("opacity.png"));
-    let save_file_name_2 = save_name_2.unwrap_or(String::from("opacity.png"));
-
-    let img = image::open(&image_path).map_err(|e| {
+pub fn save_f0_hcm(material_dir: &Path, image_path: &Path) -> Result<(), Box<dyn Error>> {
+    let img = image::open(image_path).map_err(|e| {
         eprintln!("Error opening image: {}", e);
-        eprintln!(
-            "Error opening image path and file name: {}\n{}\n{}",
-            image_path.to_string_lossy(),
-            save_file_name_1,
-            save_file_name_2
-        );
+        eprintln!("Error opening image path: {}", image_path.to_string_lossy(),);
         e
     })?;
 
     let (width, height) = img.dimensions();
-    let mut channel_map_1 = ImageBuffer::new(width, height);
-    let mut channel_map_2 = ImageBuffer::new(width, height);
+    let mut f0_map: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
+    let mut hcm_map: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
-    for (x, y, pixel) in img.pixels() {
-        let mut value = pixel.0[channel];
-        if invert {
-            value = 255 - value;
-        }
+    let mut process_images = || {
+        f0_map
+            .par_chunks_exact_mut(width as usize * 4)
+            .zip(hcm_map.par_chunks_exact_mut(width as usize * 4))
+            .enumerate()
+            .for_each(|(y, (f0_row, hcm_row))| {
+                for (x, (f0_chunk, hcm_chunk)) in f0_row
+                    .chunks_exact_mut(4)
+                    .zip(hcm_row.chunks_exact_mut(4))
+                    .enumerate()
+                {
+                    let pixel = img.get_pixel(x as u32, y as u32);
+                    let value = pixel[1];
 
-        if value >= start && value <= end {
-            let scaled_value = if scale {
-                ((value - start) as f32 / (end - start) as f32 * 255.0) as u8
-            } else {
-                value
-            };
-
-            channel_map_1.put_pixel(x, y, Luma([scaled_value]));
-            channel_map_2.put_pixel(x, y, Luma([0]));
-        } else {
-            let scaled_value = if scale {
-                if value < start {
-                    ((value as f32 / start as f32) * 255.0) as u8
-                } else {
-                    (((value - end) as f32 / (255 - end) as f32) * 255.0) as u8
+                    if value < 230 {
+                        f0_chunk.copy_from_slice(&[value, value, value, 255]);
+                        hcm_chunk.copy_from_slice(&[0, 0, 0, 255]);
+                    } else {
+                        f0_chunk.copy_from_slice(&[0, 0, 0, 255]);
+                        hcm_chunk.copy_from_slice(&[value, value, value, 255]);
+                    }
                 }
-            } else {
-                value
-            };
+            });
+    };
 
-            channel_map_1.put_pixel(x, y, Luma([0]));
-            channel_map_2.put_pixel(x, y, Luma([scaled_value]));
-        }
-    }
+    process_images();
 
-    channel_map_1
-        .save(parent_dir.join(save_file_name_1))
+    f0_map.save(material_dir.join("f0.png")).map_err(|e| {
+        eprintln!("Error saving f0 map: {}", e);
+        e
+    })?;
+
+    hcm_map.save(material_dir.join("hcm.png")).map_err(|e| {
+        eprintln!("Error saving hcm map: {}", e);
+        e
+    })?;
+
+    Ok(())
+}
+
+pub fn save_porosity_sss(material_dir: &Path, image_path: &Path) -> Result<(), Box<dyn Error>> {
+    let img = image::open(image_path).map_err(|e| {
+        eprintln!("Error opening image: {}", e);
+        eprintln!("Error opening image path: {}", image_path.to_string_lossy(),);
+        e
+    })?;
+
+    let (width, height) = img.dimensions();
+    let mut porosity_map: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
+    let mut sss_map: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
+
+    let mut process_images = || {
+        porosity_map
+            .par_chunks_exact_mut(width as usize * 4)
+            .zip(sss_map.par_chunks_exact_mut(width as usize * 4))
+            .enumerate()
+            .for_each(|(y, (porosity_row, sss_row))| {
+                for (x, (porosity_chunk, sss_chunk)) in porosity_row
+                    .chunks_exact_mut(4)
+                    .zip(sss_row.chunks_exact_mut(4))
+                    .enumerate()
+                {
+                    let pixel = img.get_pixel(x as u32, y as u32);
+                    let value = pixel[2];
+
+                    if value <= 127 {
+                        let transformed_value = value.saturating_mul(2);
+                        porosity_chunk.copy_from_slice(&[
+                            transformed_value,
+                            transformed_value,
+                            transformed_value,
+                            255,
+                        ]);
+                        sss_chunk.copy_from_slice(&[0, 0, 0, 255]);
+                    } else {
+                        let transformed_value = value.saturating_sub(128).saturating_mul(2);
+                        porosity_chunk.copy_from_slice(&[0, 0, 0, 255]);
+                        sss_chunk.copy_from_slice(&[
+                            transformed_value,
+                            transformed_value,
+                            transformed_value,
+                            255,
+                        ]);
+                    }
+                }
+            });
+    };
+
+    process_images();
+
+    porosity_map
+        .save(material_dir.join("porosity.png"))
         .map_err(|e| {
-            println!(
-                "Failed to save split channel map 1: {}\n{}",
-                e,
-                image_path.to_string_lossy()
-            );
+            eprintln!("Error saving porosity map: {}", e);
             e
         })?;
-    channel_map_2
-        .save(parent_dir.join(save_file_name_2))
-        .map_err(|e| {
-            println!(
-                "Failed to save split channel map 2: {}\n{}",
-                e,
-                image_path.to_string_lossy()
-            );
-            e
-        })?;
+
+    sss_map.save(material_dir.join("sss.png")).map_err(|e| {
+        eprintln!("Error saving sss map: {}", e);
+        e
+    })?;
 
     Ok(())
 }
 
 pub fn save_normal(
-    parent_dir: &Path,
-    file_name: Option<String>,
-    save_name: Option<String>,
+    material_dir: &Path,
+    image_path: &Path,
+    save_name: String,
 ) -> Result<(), Box<dyn Error>> {
-    let image_path = parent_dir.join(file_name.unwrap_or(String::from("color.png")));
-    let save_file_name = save_name.unwrap_or(String::from("opacity.png"));
-
+    let save_file_name = save_name;
     let img = image::open(&image_path).map_err(|e| {
         eprintln!("Error opening image: {}", e);
         eprintln!(
@@ -147,20 +193,26 @@ pub fn save_normal(
     })?;
 
     let (width, height) = img.dimensions();
-    let mut normal_map = ImageBuffer::new(width, height);
-
-    for (x, y, pixel) in img.pixels() {
-        let mut value = pixel.0;
-        value[2] = 255;
-        value[3] = 255;
-
-        normal_map.put_pixel(x, y, Rgba(value));
-    }
+    let mut normal_map: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
     normal_map
-        .save(parent_dir.join(save_file_name))
+        .par_chunks_mut(width as usize * 4)
+        .enumerate()
+        .for_each(|(y, row)| {
+            for x in 0..width {
+                let pixel = img.get_pixel(x, y as u32);
+                let idx = (x as usize) * 4;
+                row[idx] = pixel[0];
+                row[idx + 1] = pixel[1];
+                row[idx + 2] = 255;
+                row[idx + 3] = 255;
+            }
+        });
+
+    normal_map
+        .save(material_dir.join(save_file_name))
         .map_err(|e| {
-            eprintln!("Error saving alpha map: {}", e);
+            eprintln!("Error saving normal map: {}", e);
             e
         })?;
 

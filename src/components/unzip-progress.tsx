@@ -12,6 +12,9 @@ export function UnzipProgress() {
   const [open, setOpen] = useState(false);
   const [curr, setCurr] = useState<string[]>([]);
 
+  const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+
   listen<boolean>("unzip-started", (e) => setOpen(e.payload));
 
   async function init() {
@@ -19,11 +22,22 @@ export function UnzipProgress() {
       setCurr((prev) => [e.payload, ...prev]);
       if (!e.payload) {
         setCurr([]);
+        setEndTime(new Date());
+      } else {
+        setStartTime(new Date());
       }
     });
 
     return () => unlisten();
   }
+
+  useEffect(() => {
+    let timeDiff = +endTime - +startTime;
+    console.log(endTime, startTime);
+    console.log(Math.round(timeDiff));
+    timeDiff /= 1000;
+    console.log(Math.round(timeDiff));
+  }, [endTime]);
 
   useEffect(() => {
     init();

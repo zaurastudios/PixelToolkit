@@ -18,7 +18,6 @@ pub fn run() {
             // project
             core::project::get_dirs,
             core::project::update_dirs,
-            core::project::import_archive_overwrite
         ])
         .setup(|_app| {
             #[cfg(desktop)]

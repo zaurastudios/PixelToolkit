@@ -1,11 +1,14 @@
+use anyhow::Result;
 use serde_json::json;
 use std::fs::{self, File};
+use std::io::{Read, Write};
 use std::path::Path;
 use tauri::Emitter;
 
+use crate::core::image_process::{save_f0_hcm, save_porosity_sss};
 use crate::core::utils::{get_config_dir, simple_toast};
 
-use super::image_process::{save_channel_map, save_channel_map_split, save_normal};
+use super::image_process::{save_channel_map, save_normal};
 use super::utils::try_create_directory;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -280,13 +283,10 @@ pub fn create_project(
     .unwrap_or_else(|_| "Error serializing response".to_string())
 }
 
-async fn unzip_and_process(
-    zip_path: &Path,
-    dest_dir: &Path,
-    app: tauri::AppHandle,
-) -> std::io::Result<()> {
+async fn unzip_and_process(zip_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> Result<()> {
     let file = File::open(zip_path)?;
     let mut archive = zip::ZipArchive::new(file)?;
+    let mut tasks = Vec::new();
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
@@ -299,35 +299,37 @@ async fn unzip_and_process(
             if let Some(parent) = out_path.parent() {
                 fs::create_dir_all(parent)?;
             }
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer)?;
 
-            let mut out_file = File::create(&out_path)?;
-            std::io::copy(&mut file, &mut out_file)?;
+            let out_path_clone = out_path.clone();
+            let dest_dir_clone = dest_dir.to_path_buf();
+            let app_clone = app.clone();
+
+            let task = tokio::spawn(async move {
+                let mut out_file = File::create(&out_path_clone)?;
+                out_file.write_all(&buffer)?;
+                if let Some(ext) = out_path_clone.extension() {
+                    if out_path_clone.file_name() != Some(std::ffi::OsStr::new("pack.png"))
+                        && ext == "png"
+                    {
+                        let _ = process_image(&out_path_clone, &dest_dir_clone, app_clone);
+                    }
+                }
+                Ok::<_, anyhow::Error>(())
+            });
+            tasks.push(task);
         }
     }
 
-    for i in 0..archive.len() {
-        let file = archive.by_index(i)?;
-        let file_name = file.mangled_name();
-
-        if let Some(ext) = file_name.extension() {
-            if file_name.to_str() != Some("pack.png") && ext == "png" {
-                if !file_name.to_string_lossy().contains("_n.png")
-                    && !file_name.to_string_lossy().contains("_s.png")
-                {
-                    process_image(&file_name, dest_dir, app.clone())?;
-                }
-            }
-        }
+    for task in tasks {
+        task.await??;
     }
 
     Ok(())
 }
 
-pub fn process_image(
-    image_path: &Path,
-    dest_dir: &Path,
-    app: tauri::AppHandle,
-) -> std::io::Result<()> {
+fn process_image(image_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> Result<()> {
     let ignored_dirs = [
         "colormap",
         "effect",
@@ -340,111 +342,81 @@ pub fn process_image(
         "models",
     ];
 
-    let file_stem = image_path
-        .file_stem()
+    let file_name = image_path
+        .file_name()
         .unwrap()
         .to_string_lossy()
         .to_string();
-    let image_dir = dest_dir.join(image_path.with_extension(""));
+    let image_path_str = image_path.to_string_lossy().to_string();
 
-    if ignored_dirs
-        .iter()
-        .all(|dir| !image_dir.to_string_lossy().contains(dir))
-    {
-        fs::create_dir_all(&image_dir)?;
+    if ignored_dirs.iter().any(|dir| image_path_str.contains(dir)) {
+        return Ok(());
+    }
 
-        let new_image_path = image_dir.join("color.png");
-        fs::rename(dest_dir.join(&image_path), &new_image_path)?;
+    let remove_suffix = |s: &str| s.replace("_n.png", ".png").replace("_s.png", ".png");
+    let material_dir = dest_dir.join(remove_suffix(&image_path_str).replace(".png", ""));
 
-        let parent_dir = dest_dir.join(image_path.parent().unwrap());
+    fs::create_dir_all(&material_dir)?;
+    fs::write(material_dir.join("mat.yml"), "")?;
 
-        let _ = save_channel_map(&image_dir, 3, None, None, false);
+    let image_path_combined = dest_dir.join(image_path);
 
-        #[allow(unused_must_use)]
-        {
-            app.emit("unzip-progress", new_image_path);
+    app.emit("unzip-progress", material_dir.to_string_lossy().to_string())?;
+
+    match file_name.as_str() {
+        name if name.ends_with("_n.png") => {
+            let _ = save_channel_map(
+                &material_dir,
+                2,
+                &image_path_combined,
+                String::from("ao.png"),
+                false,
+            );
+            let _ = save_channel_map(
+                &material_dir,
+                3,
+                &image_path_combined,
+                String::from("height.png"),
+                false,
+            );
+            let _ = save_normal(
+                &material_dir,
+                &image_path_combined,
+                String::from("normal.png"),
+            );
+
+            fs::remove_file(&image_path_combined)?;
         }
+        name if name.ends_with("_s.png") => {
+            let _ = save_channel_map(
+                &material_dir,
+                0,
+                &image_path_combined,
+                String::from("smooth.png"),
+                true,
+            );
+            let _ = save_channel_map(
+                &material_dir,
+                3,
+                &image_path_combined,
+                String::from("emissive.png"),
+                true,
+            );
+            let _ = save_f0_hcm(&material_dir, &image_path_combined);
+            let _ = save_porosity_sss(&material_dir, &image_path_combined);
 
-        for suffix in &["_s.png", "_n.png"] {
-            let suffix_name = format!("{}{}", file_stem, suffix);
-            let suffix_file = parent_dir.join(&suffix_name);
-            let suffix_path = image_dir.join(&suffix_name);
-            if suffix_file.exists() {
-                fs::rename(suffix_file, &suffix_path)?;
-            }
-
-            #[allow(unused_must_use)]
-            {
-                app.emit("unzip-progress", &suffix_path);
-            }
-
-            if suffix == &"_n.png" {
-                let _ = save_channel_map(
-                    &image_dir,
-                    2,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("ao.png")),
-                    false,
-                );
-                let _ = save_channel_map(
-                    &image_dir,
-                    3,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("height.png")),
-                    false,
-                );
-
-                let _ = save_normal(
-                    &image_dir,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("normal.png")),
-                );
-
-                let _ = fs::remove_file(&suffix_path);
-            } else if suffix == &"_s.png" {
-                let _ = save_channel_map(
-                    &image_dir,
-                    0,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("smooth.png")),
-                    true,
-                );
-                let _ = save_channel_map(
-                    &image_dir,
-                    3,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("emissive.png")),
-                    true,
-                );
-
-                let _ = save_channel_map_split(
-                    &image_dir,
-                    1,
-                    0,
-                    229,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("f0.png")),
-                    Some(String::from("hcm.png")),
-                    true,
-                    false,
-                );
-                let _ = save_channel_map_split(
-                    &image_dir,
-                    3,
-                    0,
-                    127,
-                    Some(suffix_name.to_owned()),
-                    Some(String::from("porosity.png")),
-                    Some(String::from("sss.png")),
-                    true,
-                    false,
-                );
-
-                let _ = fs::remove_file(&suffix_path);
-            }
+            fs::remove_file(&image_path_combined)?;
         }
-
-        let _ = fs::write(image_dir.join("mat.yml"), "");
+        _ => {
+            fs::rename(&image_path_combined, material_dir.join("color.png"))?;
+            let _ = save_channel_map(
+                &material_dir,
+                3,
+                &material_dir.join("color.png"),
+                String::from("opacity.png"),
+                false,
+            );
+        }
     }
 
     Ok(())
