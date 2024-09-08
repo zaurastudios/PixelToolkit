@@ -393,7 +393,7 @@ fn process_image(image_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> R
                 0,
                 &image_path_combined,
                 String::from("smooth.png"),
-                true,
+                false,
             );
             let _ = save_channel_map(
                 &material_dir,
