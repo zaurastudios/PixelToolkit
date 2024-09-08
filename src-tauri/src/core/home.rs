@@ -9,24 +9,9 @@ use crate::core::image_process::{save_f0_hcm, save_porosity_sss};
 use crate::core::utils::{get_config_dir, simple_toast};
 
 use super::image_process::{save_channel_map, save_normal};
+use super::project::structs::{Input, ProjectYml};
+use super::project::update_project;
 use super::utils::try_create_directory;
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct Project {
-    pub id: String,
-    pub path: String,
-    pub name: String,
-    pub description: Option<String>,
-    pub pack_image: Option<String>,
-    pub date_modified: String,
-}
-
-#[derive(serde::Serialize)]
-pub struct CreateProject {
-    pub success: bool,
-    pub id: Option<String>,
-    pub message: Option<String>,
-}
 
 #[tauri::command]
 pub fn get_projects(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
@@ -160,7 +145,7 @@ pub fn create_project(
         .unwrap_or_else(|_| "Error serializing response".to_string());
     }
 
-    let project_id = format!("{}_{}", name, uuid::Uuid::new_v4());
+    let project_id = format!("{}", uuid::Uuid::new_v4());
     let project_description = description.unwrap_or("".to_string());
     let current_date = chrono::prelude::Utc::now();
 
@@ -250,6 +235,8 @@ pub fn create_project(
     let path_clone = path.to_path_buf();
     let import_zip_path_clone = import_zip_path.clone();
     let app_cloned = app.clone();
+    let project_id_clone = project_id.clone();
+    let project_name_clone = name.clone();
     tauri::async_runtime::spawn(async move {
         let zip_path_str = import_zip_path_clone.unwrap_or("".to_string());
         let zip_path = Path::new(&zip_path_str);
@@ -258,8 +245,16 @@ pub fn create_project(
             #[allow(unused_must_use)]
             {
                 app_cloned.emit("unzip-started", true);
-                let _ = unzip_and_process(zip_path, &path_clone, app_cloned.clone()).await;
+                let _ = unzip_and_process(
+                    zip_path,
+                    &path_clone,
+                    project_id_clone,
+                    project_name_clone,
+                    app_cloned.clone(),
+                )
+                .await;
                 app_cloned.emit("unzip-started", false);
+                app_cloned.emit("resync_dir_fe", false);
             }
         }
     });
@@ -283,7 +278,13 @@ pub fn create_project(
     .unwrap_or_else(|_| "Error serializing response".to_string())
 }
 
-async fn unzip_and_process(zip_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> Result<()> {
+async fn unzip_and_process(
+    zip_path: &Path,
+    dest_dir: &Path,
+    project_id: String,
+    project_name: String,
+    app: tauri::AppHandle,
+) -> Result<()> {
     let file = File::open(zip_path)?;
     let mut archive = zip::ZipArchive::new(file)?;
     let mut tasks = Vec::new();
@@ -305,10 +306,36 @@ async fn unzip_and_process(zip_path: &Path, dest_dir: &Path, app: tauri::AppHand
             let out_path_clone = out_path.clone();
             let dest_dir_clone = dest_dir.to_path_buf();
             let app_clone = app.clone();
+            let project_id_clone = project_id.clone();
+            let project_name_clone = project_name.clone();
 
             let task = tokio::spawn(async move {
                 let mut out_file = File::create(&out_path_clone)?;
                 out_file.write_all(&buffer)?;
+
+                if out_path_clone.to_string_lossy().contains("pack.mcmeta") {
+                    let mc_meta_str = fs::read_to_string(&out_path_clone).unwrap();
+
+                    let mc_meta: McMeta = serde_json::from_str(&mc_meta_str)
+                        .expect("Failed to deserialize project file");
+
+                    let mut name = mc_meta.pack.name.unwrap_or(project_name_clone.clone());
+                    if name != "My New Project" {
+                        name = project_name_clone;
+                    }
+
+                    let new_project_yml = ProjectYml {
+                        name,
+                        description: Some(mc_meta.pack.description.unwrap_or("".to_string())),
+                        input: Input {
+                            format: "labpbr-1.3".to_string(),
+                        },
+                        profiles: None,
+                        tags: None,
+                    };
+                    update_project(project_id_clone, new_project_yml, app_clone.clone());
+                }
+
                 if let Some(ext) = out_path_clone.extension() {
                     if out_path_clone.file_name() != Some(std::ffi::OsStr::new("pack.png"))
                         && ext == "png"
@@ -318,6 +345,7 @@ async fn unzip_and_process(zip_path: &Path, dest_dir: &Path, app: tauri::AppHand
                 }
                 Ok::<_, anyhow::Error>(())
             });
+
             tasks.push(task);
         }
     }
@@ -420,4 +448,33 @@ fn process_image(image_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> R
     }
 
     Ok(())
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
+pub struct Project {
+    pub id: String,
+    pub path: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub pack_image: Option<String>,
+    pub date_modified: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct CreateProject {
+    pub success: bool,
+    pub id: Option<String>,
+    pub message: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct McMeta {
+    pack: Pack,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct Pack {
+    name: Option<String>,
+    description: Option<String>,
+    pack_format: Option<u8>,
 }

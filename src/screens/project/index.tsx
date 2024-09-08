@@ -23,7 +23,7 @@ export function ProjectPage() {
             <FileTreeSidebar projectId={id!} />
           </ResizablePanel>
           <ResizableHandle />
-          <ResizablePanel className="bg-foreground/5">asd</ResizablePanel>
+          <ResizablePanel className="bg-foreground/5">{id}</ResizablePanel>
         </ResizablePanelGroup>
       </div>
     </>

@@ -20,7 +20,7 @@ import { toast } from "sonner";
 
 export const FileTreeSidebar: React.FC<{
   projectId: string;
-}> = ({ projectId: id }) => {
+}> = ({ projectId }) => {
   const navigate = useNavigate();
 
   const [data, setData] = useState<{
@@ -34,9 +34,9 @@ export const FileTreeSidebar: React.FC<{
   const [filteredFileTree, setFilteredFileTree] = useState(fileTree);
   const [query, setQuery] = useState<string>("");
 
-  async function getFileTree(cmd: string) {
+  async function getFileTree() {
     try {
-      const res: string = await invoke(cmd, { projectId: id });
+      const res: string = await invoke("get_dirs", { projectId });
       const resData: {
         file_tree: FileTree;
         redirect: boolean;
@@ -58,20 +58,31 @@ export const FileTreeSidebar: React.FC<{
       }
     } catch (err) {
       navigate("/");
-      console.error(
-        `Failed to open project: ${err}\nCommand: ${cmd}\nID: ${id}`,
-      );
+      console.error(`Failed to open project: ${err}\nID: ${projectId}`);
       toast("Failed to open project:" + String(err));
     }
   }
 
   useEffect(() => {
-    getFileTree("get_dirs");
-  }, [id]);
+    getFileTree();
+  }, []);
+  useEffect(() => {
+    const unlisten = listen<string>("resync_dir_fe", getFileTree);
+
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
 
   useEffect(() => {
     setFilteredFileTree(fileTree);
   }, [fileTree]);
+
+  useEffect(() => {
+    listen<boolean>("unzip-started", (e) => {
+      if (!e.payload) getFileTree();
+    });
+  }, []);
 
   useDebounce(
     () => {
@@ -85,14 +96,6 @@ export const FileTreeSidebar: React.FC<{
     250,
     [query, fileTree],
   );
-
-  const handleUpdateFileTree = async () => {
-    await getFileTree("update_dirs");
-  };
-
-  listen<boolean>("unzip-started", (e) => {
-    if (!e.payload) handleUpdateFileTree();
-  });
 
   if (!fileTree) return null;
 
@@ -110,11 +113,7 @@ export const FileTreeSidebar: React.FC<{
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleUpdateFileTree}
-              >
+              <Button variant="outline" size="icon" onClick={getFileTree}>
                 <FolderSync className="size-4" />
               </Button>
             </TooltipTrigger>
@@ -127,11 +126,7 @@ export const FileTreeSidebar: React.FC<{
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleUpdateFileTree}
-              >
+              <Button variant="outline" size="icon" onClick={getFileTree}>
                 <FolderSync className="size-4" />
               </Button>
             </TooltipTrigger>

@@ -17,7 +17,6 @@ pub fn run() {
             core::home::create_project,
             // project
             core::project::get_dirs,
-            core::project::update_dirs,
         ])
         .setup(|_app| {
             #[cfg(desktop)]

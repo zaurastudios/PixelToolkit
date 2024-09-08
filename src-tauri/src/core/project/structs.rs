@@ -1,7 +1,9 @@
+#[derive(serde::Serialize)]
 pub enum GameEdition {
     Java,
     Bedrock,
 }
+#[derive(serde::Serialize)]
 pub struct Profile {
     pub game_edition: GameEdition,
     pub fomart: i8,
@@ -14,10 +16,12 @@ pub struct Profile {
     pub bake_occlusion_texture: Option<bool>,
 }
 
+#[derive(serde::Serialize)]
 pub struct Input {
     pub format: String,
 }
 
+#[derive(serde::Serialize)]
 pub struct ProjectYml {
     pub name: String,
     pub description: Option<String>,

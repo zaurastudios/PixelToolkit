@@ -5,10 +5,10 @@ use std::{
     path::Path,
 };
 
-use structs::FileTree;
+use structs::{FileTree, ProjectYml};
 
 use super::{
-    home::{get_projects_vec, remove_project},
+    home::{get_projects_vec, remove_project, Project},
     utils::get_config_dir,
 };
 
@@ -69,7 +69,10 @@ pub fn get_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, Str
     let mut projects = get_projects_vec(&app);
     let project = projects
         .iter_mut()
-        .find(|p| p.id == project_id)
+        .find(|p| {
+            println!("{}: {}", p.name, p.id);
+            p.id == project_id
+        })
         .ok_or_else(|| {
             remove_project(project_id.clone(), app.clone());
             "Project not found".to_string()
@@ -103,6 +106,7 @@ fn update_project_modified_date(project_id: String, app: &tauri::AppHandle) -> R
 
     let config_dir = get_config_dir(app);
     let projects_yml_path = Path::new(&config_dir).join("projects.yml");
+
     let mut projects = get_projects_vec(app);
     for p in projects.iter_mut() {
         if p.id == project_id {
@@ -117,30 +121,60 @@ fn update_project_modified_date(project_id: String, app: &tauri::AppHandle) -> R
         .map_err(|e| format!("Failed to write project file: {}", e))
 }
 
-#[tauri::command]
-pub fn update_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, String> {
+pub fn update_project(project_id: String, project_yml: ProjectYml, app: tauri::AppHandle) -> bool {
+    let config_dir = get_config_dir(&app);
+    let projects_yml_path = Path::new(&config_dir).join("projects.yml");
+
     let mut projects = get_projects_vec(&app);
-    let project = projects
-        .iter_mut()
-        .find(|p| p.id == project_id)
-        .ok_or_else(|| {
-            remove_project(project_id.clone(), app.clone());
-            "Project not found".to_string()
-        })?;
+    for p in projects.iter_mut() {
+        if p.id == project_id {
+            p.name = project_yml.name.clone();
+            if p.description == Some("".to_owned()) {
+                p.description = project_yml.description.clone();
+            }
+        }
+    }
 
+    let filtered_projects: Vec<Project> = projects
+        .clone()
+        .into_iter()
+        .filter(|p| p.id == project_id)
+        .collect();
+    if filtered_projects.len() == 0 {
+        return false;
+    }
+
+    let project = &filtered_projects[0];
     let path = Path::new(&project.path);
+    let project_yml_path = path.join("project.yml");
 
-    let file_tree = build_file_tree(path).unwrap_or_else(|| FileTree {
-        name: "".to_string(),
-        is_mat: None,
-        children: Vec::new(),
-    });
+    let updated_project_yml = serde_yaml::to_string(&project_yml)
+        .map_err(|e| {
+            format!("Failed to serializse project.yml: {}", e);
+            return false;
+        })
+        .unwrap();
 
-    let response = GetDirsResponse {
-        file_tree: Some(file_tree),
-        redirect: false,
-        project_path: project.path.clone(),
-    };
+    fs::write(&project_yml_path, &updated_project_yml)
+        .map_err(|e| {
+            format!("Failed to write project file: {}", e);
+            false
+        })
+        .unwrap();
 
-    serde_json::to_string(&response).map_err(|_| "Error serializing response".to_string())
+    let updated_content = serde_yaml::to_string(&projects)
+        .map_err(|e| {
+            format!("Failed to serialize project file: {}", e);
+            false
+        })
+        .unwrap();
+
+    fs::write(&projects_yml_path, updated_content)
+        .map_err(|e| {
+            format!("Failed to write project file: {}", e);
+            false
+        })
+        .unwrap();
+
+    true
 }

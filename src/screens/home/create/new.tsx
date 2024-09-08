@@ -64,7 +64,8 @@ export const NewProject = ({
         createOfDirs: newProjectInfo.createOfDirs,
         importZipPath: zipPath,
       });
-      const data: CreateProjectResponse = JSON.parse(response);
+      const data: CreateProjectResponse = await JSON.parse(response);
+      console.log(data.id);
 
       if (data.success) {
         reset();
