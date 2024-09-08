@@ -1,9 +1,17 @@
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { FileTree } from "@/types/project";
-import { ChevronRight, Paintbrush } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { ChevronRight, FolderOpen, Paintbrush } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { FixedSizeList as List } from "react-window";
-import { Button } from "./ui/button";
 import { twMerge } from "tailwind-merge";
+import { Button } from "./ui/button";
+import { buildPath } from "@/lib/utils";
 
 type FlattenedEntry = {
   name: string;
@@ -25,6 +33,14 @@ export const FileTreeFolder: React.FC<{
   useEffect(() => {
     if (typeof window !== "undefined") {
       setWindowHeight(window.innerHeight);
+      window.addEventListener("resize", () =>
+        setWindowHeight(window.innerHeight),
+      );
+
+      return () =>
+        window.removeEventListener("resize", () =>
+          setWindowHeight(window.innerHeight),
+        );
     }
   }, []);
 
@@ -79,6 +95,7 @@ export const FileTreeFolder: React.FC<{
           <EntryRow
             entry={entry}
             toggleNode={toggleNode}
+            projectPath={projectPath}
             style={{ marginLeft: `${entry.depth * 16}px` }}
           />
         </div>
@@ -102,12 +119,14 @@ export const FileTreeFolder: React.FC<{
 type EntryRowProps = {
   entry: FlattenedEntry;
   toggleNode: (path: string) => void;
+  projectPath: string;
   style: React.CSSProperties;
 };
 
 const EntryRow: React.FC<EntryRowProps> = React.memo(
-  ({ entry, toggleNode, style }) => {
+  ({ entry, toggleNode, projectPath, style }) => {
     const entryPath = entry.path + (entry.isMat ? "/mat.yml" : "");
+    const pathToEntry = buildPath(projectPath, entryPath);
 
     const handleClick = () => {
       if (!entry.isMat) {
@@ -123,22 +142,34 @@ const EntryRow: React.FC<EntryRowProps> = React.memo(
         className={twMerge("my-1", entry.isMat && "border-l pl-0.5")}
         style={style}
       >
-        <Button
-          size="sm"
-          onClick={handleClick}
-          variant={entry.isExpanded ? "secondary" : "ghost"}
-          className="h-max px-2 py-1 pl-1 text-left leading-3"
-        >
-          {entry.isMat && <Paintbrush className="mr-2 size-4 opacity-50" />}
-          {!entry.isMat && entry.hasChildren && (
-            <ChevronRight
-              className={`mr-1 size-4 opacity-50 ${
-                entry.isExpanded ? "rotate-90" : undefined
-              }`}
-            />
-          )}
-          <span>{entry.name}</span>
-        </Button>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <Button
+              size="sm"
+              onClick={handleClick}
+              variant={entry.isExpanded ? "secondary" : "ghost"}
+              className="h-max px-2 py-1 pl-1 text-left leading-3"
+            >
+              {entry.isMat && <Paintbrush className="mr-2 size-4 opacity-50" />}
+              {!entry.isMat && entry.hasChildren && (
+                <ChevronRight
+                  className={`mr-1 size-4 opacity-50 ${
+                    entry.isExpanded ? "rotate-90" : undefined
+                  }`}
+                />
+              )}
+              <span>{entry.name}</span>
+            </Button>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem
+              onClick={() => invoke("show_in_folder", { path: pathToEntry })}
+            >
+              <FolderOpen className="mr-2 size-5" />
+              <span className="text-center text-sm">Show in folder</span>
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </div>
     );
   },
