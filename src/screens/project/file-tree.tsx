@@ -41,7 +41,7 @@ export const FileTreeSidebar: React.FC<{
         file_tree: FileTree;
         redirect: boolean;
         project_path: string;
-      } = JSON.parse(res);
+      } = await JSON.parse(res);
       if (typeof resData === "string") {
         navigate("/");
         throw new Error("404");
@@ -58,7 +58,9 @@ export const FileTreeSidebar: React.FC<{
       }
     } catch (err) {
       navigate("/");
-      console.error("Failed to open project:", String(err));
+      console.error(
+        `Failed to open project: ${err}\nCommand: ${cmd}\nID: ${id}`,
+      );
       toast("Failed to open project:" + String(err));
     }
   }
