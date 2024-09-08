@@ -34,9 +34,9 @@ export const FileTreeSidebar: React.FC<{
   const [filteredFileTree, setFilteredFileTree] = useState(fileTree);
   const [query, setQuery] = useState<string>("");
 
-  async function updateFileTree() {
+  async function getFileTree(cmd: string) {
     try {
-      const res: string = await invoke("update_dirs", { projectId: id });
+      const res: string = await invoke(cmd, { projectId: id });
       const resData: {
         file_tree: FileTree;
         redirect: boolean;
@@ -64,35 +64,7 @@ export const FileTreeSidebar: React.FC<{
   }
 
   useEffect(() => {
-    async function init() {
-      const res: string = await invoke("get_dirs", { projectId: id });
-      try {
-        const resData: {
-          file_tree: FileTree;
-          redirect: boolean;
-          project_path: string;
-        } = JSON.parse(res);
-        if (typeof resData === "string") {
-          navigate("/");
-          throw new Error("404");
-        }
-
-        if (resData.redirect) {
-          navigate("/");
-        } else {
-          setData({
-            fileTree: resData.file_tree,
-            redirect: resData.redirect,
-            projectPath: resData.project_path,
-          });
-        }
-      } catch (err) {
-        navigate("/");
-        console.error("Failed to open project:", String(err));
-        toast("Failed to open project:" + String(err));
-      }
-    }
-    init();
+    getFileTree("get_dirs");
   }, [id]);
 
   useEffect(() => {
@@ -113,13 +85,11 @@ export const FileTreeSidebar: React.FC<{
   );
 
   const handleUpdateFileTree = async () => {
-    await updateFileTree();
+    await getFileTree("update_dirs");
   };
 
   listen<boolean>("unzip-started", (e) => {
-    if (!e.payload) {
-      updateFileTree();
-    }
+    if (!e.payload) handleUpdateFileTree();
   });
 
   if (!fileTree) return null;
@@ -177,7 +147,6 @@ export const FileTreeSidebar: React.FC<{
             (e) => e.name === "assets",
           )!,
         }}
-        query={query}
         projectPath={projectPath!}
       />
     </>

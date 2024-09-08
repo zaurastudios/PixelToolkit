@@ -24,9 +24,8 @@ type FlattenedEntry = {
 
 export const FileTreeFolder: React.FC<{
   fileTree: FileTree;
-  query: string;
   projectPath: string;
-}> = React.memo(({ fileTree, query, projectPath }) => {
+}> = React.memo(({ fileTree, projectPath }) => {
   const [expandedNodes, setExpandedNodes] = useState<string[]>([]);
   const [windowHeight, setWindowHeight] = useState(0);
 

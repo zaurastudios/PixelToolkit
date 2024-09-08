@@ -126,6 +126,19 @@ pub fn create_project(
         .unwrap_or_else(|_| "Error serializing response".to_string());
     }
 
+    if path.read_dir().unwrap().count() != 0 {
+        simple_toast(
+            "Error creating project: Selected folder is not empty".to_string(),
+            app,
+        );
+        return serde_json::to_string(&CreateProject {
+            success: false,
+            id: None,
+            message: Some("Selected folder is not empty".to_string()),
+        })
+        .unwrap_or_else(|_| "Error serializing response".to_string());
+    }
+
     let config_dir = get_config_dir(&app);
     let projects_yml_path = Path::new(&config_dir).join("projects.yml");
 
