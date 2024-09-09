@@ -69,10 +69,7 @@ pub fn get_dirs(project_id: String, app: tauri::AppHandle) -> Result<String, Str
     let mut projects = get_projects_vec(&app);
     let project = projects
         .iter_mut()
-        .find(|p| {
-            println!("{}: {}", p.name, p.id);
-            p.id == project_id
-        })
+        .find(|p| p.id == project_id)
         .ok_or_else(|| {
             remove_project(project_id.clone(), app.clone());
             "Project not found".to_string()

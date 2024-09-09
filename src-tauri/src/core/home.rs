@@ -450,6 +450,92 @@ fn process_image(image_path: &Path, dest_dir: &Path, app: tauri::AppHandle) -> R
     Ok(())
 }
 
+#[tauri::command]
+pub fn create_project_existing(
+    project_yml_path: String,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    let path = Path::new(&project_yml_path);
+    if !path.exists() {
+        return Err(serde_json::to_string(&CreateExistingRes {
+            success: false,
+            id: None,
+            message: String::from("Failed to create project. Selected project.yml does not exist."),
+        })
+        .unwrap_or_else(|_| "Error serializing response".to_string()));
+    }
+
+    let project_yml_str = fs::read_to_string(path).map_err(|e| {
+        eprintln!("Failed to read project.yml: {}", e);
+        return serde_json::to_string(&CreateExistingRes {
+            success: false,
+            id: None,
+            message: String::from(format!("Failed to read project.yml: {}", e)),
+        })
+        .unwrap_or_else(|_| "Error serializing response".to_string());
+    })?;
+
+    let project_yml: ProjectYml = serde_yaml::from_str(&project_yml_str)
+        .map_err(|e| format!("Failed to deserialize project file: {}", e))?;
+    let project_path = project_yml_path.replace("/project.yml", "");
+    let project_id = String::from(uuid::Uuid::new_v4());
+    let project_name = project_yml.name;
+    let project_desc = project_yml.description.unwrap_or("".to_string());
+    let date_modified = chrono::prelude::Utc::now();
+
+    let config_dir = get_config_dir(&app);
+    let projects_yml_path = Path::new(&config_dir).join("projects.yml");
+
+    let mut projects: Vec<Project> = get_projects_vec(&app);
+    if projects.iter().any(|p| p.path == project_path) {
+        return Err(serde_json::to_string(&CreateProject {
+            success: false,
+            id: None,
+            message: Some("Selected path already exists in your projects".to_string()),
+        })
+        .unwrap_or_else(|_| "Error serializing response".to_string()));
+    }
+
+    projects.push(Project {
+        id: project_id.clone(),
+        path: project_path,
+        name: project_name,
+        description: Some(project_desc),
+        date_modified: date_modified.to_string(),
+        pack_image: None,
+    });
+
+    let updated_content = match serde_yaml::to_string(&projects) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("Failed to serialize project file: {}", e);
+            return Err(serde_json::to_string(&CreateExistingRes {
+                success: false,
+                id: None,
+                message: e.to_string(),
+            })
+            .unwrap_or_else(|_| "Error serializing response".to_string()));
+        }
+    };
+
+    if let Err(e) = fs::write(&projects_yml_path, updated_content) {
+        eprintln!("Failed to write project file: {}", e);
+        return Err(serde_json::to_string(&CreateExistingRes {
+            success: false,
+            id: None,
+            message: format!("Failed to write to your projects: {}", e.to_string()).to_string(),
+        })
+        .unwrap_or_else(|_| "Error serializing response".to_string()));
+    }
+
+    Ok(serde_json::to_string(&CreateExistingRes {
+        success: true,
+        id: Some(project_id),
+        message: String::from("Successfully added project"),
+    })
+    .unwrap_or_else(|_| "Error serializing response".to_string()))
+}
+
 #[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct Project {
     pub id: String,
@@ -477,4 +563,11 @@ pub struct Pack {
     name: Option<String>,
     description: Option<String>,
     pack_format: Option<u8>,
+}
+
+#[derive(serde::Serialize)]
+struct CreateExistingRes {
+    success: bool,
+    id: Option<String>,
+    message: String,
 }

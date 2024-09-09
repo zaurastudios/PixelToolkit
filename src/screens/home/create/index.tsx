@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { NewProject } from "./new";
+import { ImportExisting } from "./existing";
 
 export const CreateProject = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -30,9 +31,11 @@ export const CreateProject = () => {
   const [error, setError] = useState<string | null>(null);
   const [zipPath, setZipPath] = useState<string | null>(null);
 
+  const [projectYmlPath, setProjectYmlPath] = useState<string | null>(null);
+
   function reset() {
     setProject("new-project");
-    setPath("/home/zoc/Desktop/cool");
+    setPath("");
     setNewProjectInfo({
       name: null,
       description: null,
@@ -41,7 +44,8 @@ export const CreateProject = () => {
       createOfDirs: false,
     });
     setError("");
-    setZipPath("/home/zoc/Downloads/SubtlePBR-v19-32x.zip");
+    setZipPath("");
+    setProjectYmlPath("");
   }
 
   return (
@@ -97,7 +101,21 @@ export const CreateProject = () => {
               setZipPath={setZipPath}
             />
           </TabsContent>
-          <TabsContent value="import-existing"></TabsContent>
+          <TabsContent
+            value="import-existing"
+            autoFocus={false}
+            className="space-y-2"
+            asChild
+          >
+            <ImportExisting
+              reset={reset}
+              setDialogOpen={setDialogOpen}
+              error={error}
+              setError={setError}
+              projectYmlPath={projectYmlPath}
+              setProjectYmlPath={setProjectYmlPath}
+            />
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>

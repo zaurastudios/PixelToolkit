@@ -15,6 +15,7 @@ pub fn run() {
             core::home::get_projects,
             core::home::remove_project,
             core::home::create_project,
+            core::home::create_project_existing,
             // project
             core::project::get_dirs,
         ])
