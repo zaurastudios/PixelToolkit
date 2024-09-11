@@ -12,6 +12,8 @@ import { FixedSizeList as List } from "react-window";
 import { twMerge } from "tailwind-merge";
 import { Button } from "./ui/button";
 import { buildPath } from "@/lib/utils";
+import { toast } from "sonner";
+import path from "path";
 
 type FlattenedEntry = {
   name: string;
@@ -86,6 +88,22 @@ export const FileTreeFolder: React.FC<{
     );
   }, []);
 
+  const [selectedMaterial, setSelectedMaterial] = useState("");
+
+  async function selectMaterial(materialPath: string) {
+    try {
+      if (materialPath !== selectedMaterial) {
+        const res = await invoke("select_texture", {
+          materialPath,
+        });
+        setSelectedMaterial(String(res));
+      }
+    } catch (err) {
+      toast("Failed to select texture: " + String(err));
+      console.error("Failed to select texture: ", String(err));
+    }
+  }
+
   const rowRenderer = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => {
       const entry = flattenedTree[index];
@@ -95,12 +113,14 @@ export const FileTreeFolder: React.FC<{
             entry={entry}
             toggleNode={toggleNode}
             projectPath={projectPath}
+            selectMaterial={selectMaterial}
+            selectedMaterial={selectedMaterial}
             style={{ marginLeft: `${entry.depth * 16}px` }}
           />
         </div>
       );
     },
-    [flattenedTree, toggleNode],
+    [flattenedTree, toggleNode, selectedMaterial],
   );
 
   return (
@@ -119,11 +139,20 @@ type EntryRowProps = {
   entry: FlattenedEntry;
   toggleNode: (path: string) => void;
   projectPath: string;
+  selectMaterial: (materialPath: string) => void;
+  selectedMaterial: string;
   style: React.CSSProperties;
 };
 
 const EntryRow: React.FC<EntryRowProps> = React.memo(
-  ({ entry, toggleNode, projectPath, style }) => {
+  ({
+    entry,
+    toggleNode,
+    projectPath,
+    selectMaterial,
+    selectedMaterial,
+    style,
+  }) => {
     const entryPath = entry.path + (entry.isMat ? "/mat.yml" : "");
     const pathToEntry = buildPath(projectPath, entryPath);
 
@@ -131,8 +160,7 @@ const EntryRow: React.FC<EntryRowProps> = React.memo(
       if (!entry.isMat) {
         toggleNode(entry.path);
       } else {
-        // Handle material selection if needed
-        // window.electron.ipcRenderer.sendMessage("select-texture", entry.path);
+        selectMaterial(pathToEntry);
       }
     };
 
@@ -146,7 +174,11 @@ const EntryRow: React.FC<EntryRowProps> = React.memo(
             <Button
               size="sm"
               onClick={handleClick}
-              variant={entry.isExpanded ? "secondary" : "ghost"}
+              variant={
+                entry.isExpanded || pathToEntry === selectedMaterial
+                  ? "secondary"
+                  : "ghost"
+              }
               className="h-max px-2 py-1 pl-1 text-left leading-3"
             >
               {entry.isMat && <Paintbrush className="mr-2 size-4 opacity-50" />}

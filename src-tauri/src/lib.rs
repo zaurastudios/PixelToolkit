@@ -18,6 +18,9 @@ pub fn run() {
             core::home::create_project_existing,
             // project
             core::project::get_dirs,
+            // interface
+            core::interface::select_texture,
+            core::interface::select_texture_file,
         ])
         .setup(|_app| {
             #[cfg(desktop)]
