@@ -8,7 +8,7 @@ use std::{
 use base64::{engine::general_purpose, Engine};
 use image::{DynamicImage, ImageBuffer, Luma};
 use regex::Regex;
-use structs::MatYml;
+use structs::{MatYml, TextureFile, TEXTURE_FILES};
 use tauri::Emitter;
 
 use super::utils::simple_toast;
@@ -73,25 +73,30 @@ pub fn select_texture_file(
             })
     };
 
-    let file = find_matching_file(texture_file.pattern)
-        .or_else(|| {
-            texture_file
-                .alternate
-                .and_then(|alt| find_matching_file(alt))
-        })
-        .ok_or_else(|| {
-            format!(
-                "No file matching the pattern for '{}' found in the directory.",
-                texture
-            )
-        })?;
+    let original_exists = find_matching_file(texture_file.pattern).is_some();
 
-    send_base64_image(file, texture_file, app)
+    let file = if original_exists {
+        find_matching_file(texture_file.pattern)
+    } else {
+        texture_file
+            .alternate
+            .and_then(|alt| find_matching_file(alt))
+    };
+
+    let file = file.ok_or_else(|| {
+        format!(
+            "No file matching the pattern for '{}' found in the directory.",
+            texture
+        )
+    })?;
+
+    send_base64_image(file, texture_file, original_exists, app)
 }
 
 fn send_base64_image(
     file: DirEntry,
     texture_file: &TextureFile,
+    use_og: bool,
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let img = image::open(file.path()).map_err(|e| {
@@ -104,8 +109,8 @@ fn send_base64_image(
 
     if texture_file.greyscale {
         let luma_img = img.into_luma8();
-        let final_img = if texture_file.alternate.is_some() {
-            invert_grayscale_image(luma_img)
+        let final_img = if texture_file.alternate.is_some() && !use_og {
+            invert_img(luma_img)
         } else {
             DynamicImage::ImageLuma8(luma_img)
         };
@@ -122,7 +127,7 @@ fn send_base64_image(
 
     Ok(res_base64)
 }
-fn invert_grayscale_image(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> DynamicImage {
+fn invert_img(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> DynamicImage {
     let (width, height) = img.dimensions();
     let inverted = ImageBuffer::from_fn(width, height, |x, y| {
         let pixel = img.get_pixel(x, y);
@@ -130,91 +135,3 @@ fn invert_grayscale_image(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> DynamicImage {
     });
     DynamicImage::ImageLuma8(inverted)
 }
-
-struct TextureFile {
-    name: &'static str,
-    pattern: &'static str,
-    greyscale: bool,
-    alternate: Option<&'static str>,
-}
-
-const TEXTURE_FILES: [TextureFile; 13] = [
-    TextureFile {
-        name: "color",
-        pattern: r".*(albedo|color).*\.png$",
-        greyscale: false,
-        alternate: None,
-    },
-    TextureFile {
-        name: "opacity",
-        pattern: r".*opacity.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "height",
-        pattern: r".*height.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "normal",
-        pattern: r".*normal.*\.png$",
-        greyscale: false,
-        alternate: None,
-    },
-    TextureFile {
-        name: "occlusion",
-        pattern: r".*(occlusion|ao).*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "smooth",
-        pattern: r".*smooth.*\.png$",
-        greyscale: true,
-        alternate: Some(r".*rough.*\.png$"),
-    },
-    TextureFile {
-        name: "rough",
-        pattern: r".*rough.*\.png$",
-        greyscale: true,
-        alternate: Some(r".*smooth.*\.png$"),
-    },
-    TextureFile {
-        name: "metal",
-        pattern: r".*metal.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "hcm",
-        pattern: r".*hcm.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "f0",
-        pattern: r".*f0.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "porosity",
-        pattern: r".*porosity.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "sss",
-        pattern: r".*sss.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-    TextureFile {
-        name: "emissive",
-        pattern: r".*emissive.*\.png$",
-        greyscale: true,
-        alternate: None,
-    },
-];

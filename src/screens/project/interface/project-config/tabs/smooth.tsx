@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect, useState } from "react";
 // import { Roughness } from "../types";
 
-export function Rough({ materialPath }: { materialPath: string }) {
+export function Smooth({ materialPath }: { materialPath: string }) {
   function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
   }
@@ -13,7 +13,7 @@ export function Rough({ materialPath }: { materialPath: string }) {
     async function init() {
       const res = await invoke("select_texture_file", {
         materialPath,
-        texture: "rough",
+        texture: "smooth",
       });
       console.log(res);
     }
