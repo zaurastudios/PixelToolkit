@@ -4,6 +4,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import ProjectConfig from "./project-config";
+import { TextureCanvas } from "@/components/texture-canvas";
 
 export function Interface({ projectPath }: { projectPath: string }) {
   return (
@@ -14,7 +15,7 @@ export function Interface({ projectPath }: { projectPath: string }) {
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel className="bg-foreground/[0.02]">
-          {/* <TwoDCanvas /> */}
+          <TextureCanvas />
         </ResizablePanel>
       </ResizablePanelGroup>
     </>

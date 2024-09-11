@@ -11,26 +11,9 @@ import * as Select from "@/components/ui/select";
 import { listen } from "@tauri-apps/api/event";
 
 import { DefaultTab } from "./tabs";
+import { textureFilesOptions, TextureFilesTypes } from "@/types/interface";
 
 type TabOptions = "normal" | "ctm" | "filters";
-
-const textureFilesOptions = [
-  "General",
-  "Color",
-  "Opacity",
-  "Height",
-  "Normal",
-  "Occlusion",
-  "Smoothness",
-  "Roughness",
-  "Metal",
-  "HCM",
-  "F0",
-  "Porosity",
-  "SSS",
-  "Emissive",
-] as const;
-export type TextureFilesTypes = (typeof textureFilesOptions)[number];
 
 export default function ProjectConfig({
   texturePath,

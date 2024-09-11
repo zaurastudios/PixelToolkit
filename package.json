@@ -20,12 +20,16 @@
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@react-spring/three": "^9.7.4",
+    "@react-three/drei": "^9.112.0",
+    "@react-three/fiber": "^8.17.7",
     "@tauri-apps/api": ">=2.0.0-rc.0",
     "@tauri-apps/plugin-dialog": "^2.0.0-rc",
     "@tauri-apps/plugin-global-shortcut": "^2.0.0-rc",
     "@tauri-apps/plugin-os": "^2.0.0-rc",
     "@tauri-apps/plugin-shell": ">=2.0.0-rc.0",
     "@types/react-window": "^1.8.8",
+    "@types/three": "^0.168.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.437.0",
@@ -39,7 +43,8 @@
     "sonner": "^1.5.0",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.168.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": ">=2.0.0-rc.0",
