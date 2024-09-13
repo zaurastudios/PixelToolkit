@@ -37,7 +37,6 @@ export const ImportExisting = ({
         projectYmlPath,
       });
       const data = await JSON.parse(response);
-      console.log(data.id);
 
       if (data.success) {
         reset();

@@ -10,11 +10,10 @@ export function Normal({ materialPath }: { materialPath: string }) {
 
   useEffect(() => {
     async function init() {
-      const res = await invoke("select_texture_file", {
+      await invoke("select_texture_file", {
         materialPath,
         texture: "normal",
       });
-      console.log(res);
     }
 
     init();

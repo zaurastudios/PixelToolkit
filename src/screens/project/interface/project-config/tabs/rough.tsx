@@ -11,11 +11,10 @@ export function Rough({ materialPath }: { materialPath: string }) {
 
   useEffect(() => {
     async function init() {
-      const res = await invoke("select_texture_file", {
+      await invoke("select_texture_file", {
         materialPath,
         texture: "rough",
       });
-      console.log(res);
     }
 
     init();

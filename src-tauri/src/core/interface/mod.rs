@@ -62,6 +62,17 @@ pub fn select_texture_file(
             )
         })?;
 
+    let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
+        let err = format!("Failed to read mat.yml file {}\n {}", material_path, e);
+        eprintln!("{}", err);
+        return err;
+    })?;
+    let mat_yml: MatYml = serde_yaml::from_str(&mat_yml_str).map_err(|e| {
+        let err = format!("Failed to deserialise mat.yml file {}", e);
+        eprintln!("{}", err);
+        return err;
+    })?;
+
     let find_matching_file = |pattern: &str| -> Option<DirEntry> {
         fs::read_dir(path)
             .ok()?
@@ -80,11 +91,11 @@ pub fn select_texture_file(
             "No file matching the pattern for '{}' found in the directory.",
             texture
         ))?;
-        return send_base64_image(file, texture_file, true, app);
+        return send_base64_image(file, texture_file, true, mat_yml, app);
     } else if !original_exists && texture_file.alternate.is_some() {
         let file = find_matching_file(texture_file.alternate.unwrap());
         match file {
-            Some(file) => return send_base64_image(file, texture_file, false, app),
+            Some(file) => return send_base64_image(file, texture_file, false, mat_yml, app),
             None => return send_base64_image_default(texture_file, original_exists, app),
         }
     } else {
@@ -96,6 +107,7 @@ fn send_base64_image(
     file: DirEntry,
     texture_file: &TextureFile,
     use_og: bool,
+    mat_yml: MatYml,
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let img = image::open(file.path()).map_err(|e| {
@@ -106,8 +118,43 @@ fn send_base64_image(
     let mut buf = vec![];
     let mut cursor = std::io::Cursor::new(&mut buf);
 
+    let mut luma_img = img.clone().into_luma8();
+
     if texture_file.greyscale {
-        let luma_img = img.into_luma8();
+        if ["opacity", "smooth", "rough", "porosity", "sss", "emissive"]
+            .contains(&texture_file.name)
+        {
+            let texture_properties = match texture_file.name {
+                "rough" => {
+                    if use_og {
+                        mat_yml.rough
+                    } else {
+                        mat_yml.smooth
+                    }
+                }
+                "smooth" => {
+                    if use_og {
+                        mat_yml.smooth
+                    } else {
+                        mat_yml.rough
+                    }
+                }
+                _ => None,
+            };
+
+            if let Some(texture) = &texture_properties {
+                let _value = texture.value.unwrap_or(0.0);
+                let shift = texture.shift.unwrap_or(0.0);
+                let scale = texture.scale.unwrap_or(1.0);
+
+                for pixel in luma_img.pixels_mut() {
+                    let current_value = pixel.0[0] as f32 / 255.0;
+                    let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
+                    pixel.0[0] = (new_value * 255.0) as u8;
+                }
+            }
+        }
+
         let final_img = if !use_og {
             invert_img(luma_img)
         } else {

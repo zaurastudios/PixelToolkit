@@ -2,8 +2,14 @@ use image::Rgba;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct MatYml {
-    pub color: Option<DefaultsGreyscale>,
+    // pub color: Option<DefaultsGreyscale>,
+    pub normal: Option<Normal>,
+    pub opacity: Option<DefaultsGreyscale>,
+    pub smooth: Option<DefaultsGreyscale>,
     pub rough: Option<DefaultsGreyscale>,
+    pub porosity: Option<DefaultsGreyscale>,
+    pub sss: Option<DefaultsGreyscale>,
+    pub emissive: Option<DefaultsGreyscale>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

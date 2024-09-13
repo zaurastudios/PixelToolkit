@@ -65,7 +65,6 @@ export const NewProject = ({
         importZipPath: zipPath,
       });
       const data: CreateProjectResponse = await JSON.parse(response);
-      console.log(data.id);
 
       if (data.success) {
         reset();

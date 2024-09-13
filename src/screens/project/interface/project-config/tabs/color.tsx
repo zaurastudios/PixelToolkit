@@ -8,11 +8,10 @@ export function Color({ materialPath }: { materialPath: string }) {
 
   useEffect(() => {
     async function init() {
-      const res = await invoke("select_texture_file", {
+      await invoke("select_texture_file", {
         materialPath,
         texture: "color",
       });
-      console.log(res);
     }
 
     init();

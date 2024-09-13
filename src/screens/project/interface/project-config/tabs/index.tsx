@@ -4,8 +4,8 @@
 import { Color } from "./color";
 import { Height } from "./height";
 import { Normal } from "./normal";
-import { Smooth } from "./smooth";
 import { Rough } from "./rough";
+import { Smooth } from "./smooth";
 
 export function DefaultTab({
   textureFileOption,
