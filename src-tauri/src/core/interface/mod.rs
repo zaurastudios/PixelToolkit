@@ -6,7 +6,7 @@ use std::{
 };
 
 use base64::{engine::general_purpose, Engine};
-use image::{DynamicImage, ImageBuffer, Luma};
+use image::{DynamicImage, ImageBuffer, Luma, Pixel};
 use regex::Regex;
 use structs::{MatYml, TextureFile, TEXTURE_FILES};
 use tauri::Emitter;
@@ -75,22 +75,21 @@ pub fn select_texture_file(
 
     let original_exists = find_matching_file(texture_file.pattern).is_some();
 
-    let file = if original_exists {
-        find_matching_file(texture_file.pattern)
-    } else {
-        texture_file
-            .alternate
-            .and_then(|alt| find_matching_file(alt))
-    };
-
-    let file = file.ok_or_else(|| {
-        format!(
+    if original_exists {
+        let file = find_matching_file(&texture_file.pattern).ok_or(format!(
             "No file matching the pattern for '{}' found in the directory.",
             texture
-        )
-    })?;
-
-    send_base64_image(file, texture_file, original_exists, app)
+        ))?;
+        return send_base64_image(file, texture_file, true, app);
+    } else if !original_exists && texture_file.alternate.is_some() {
+        let file = find_matching_file(texture_file.alternate.unwrap());
+        match file {
+            Some(file) => return send_base64_image(file, texture_file, false, app),
+            None => return send_base64_image_default(texture_file, original_exists, app),
+        }
+    } else {
+        Err(String::from("Failed to get texture."))
+    }
 }
 
 fn send_base64_image(
@@ -109,7 +108,7 @@ fn send_base64_image(
 
     if texture_file.greyscale {
         let luma_img = img.into_luma8();
-        let final_img = if texture_file.alternate.is_some() && !use_og {
+        let final_img = if !use_og {
             invert_img(luma_img)
         } else {
             DynamicImage::ImageLuma8(luma_img)
@@ -127,6 +126,34 @@ fn send_base64_image(
 
     Ok(res_base64)
 }
+
+fn send_base64_image_default(
+    texture_file: &TextureFile,
+    use_og: bool,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    let color = if texture_file.alternate.is_some() && !use_og {
+        texture_file.default_color.map_without_alpha(|e| 255 - e)
+    } else {
+        texture_file.default_color
+    };
+    let img = image::ImageBuffer::from_pixel(16, 16, color);
+    let dynamic_img = image::DynamicImage::ImageRgba8(img);
+
+    let mut buf = vec![];
+    let mut cursor = std::io::Cursor::new(&mut buf);
+    dynamic_img
+        .write_to(&mut cursor, image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to write default image: {}", e))?;
+
+    let res_base64 = general_purpose::STANDARD.encode(&buf);
+
+    app.emit("selected-texture-file", res_base64.clone())
+        .map_err(|e| format!("Failed to emit event: {}", e))?;
+
+    Ok(res_base64)
+}
+
 fn invert_img(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> DynamicImage {
     let (width, height) = img.dimensions();
     let inverted = ImageBuffer::from_fn(width, height, |x, y| {

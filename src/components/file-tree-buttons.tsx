@@ -13,7 +13,6 @@ import { twMerge } from "tailwind-merge";
 import { Button } from "./ui/button";
 import { buildPath } from "@/lib/utils";
 import { toast } from "sonner";
-import path from "path";
 
 type FlattenedEntry = {
   name: string;

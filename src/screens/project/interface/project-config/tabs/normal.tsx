@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect } from "react";
 
-export function Height({ materialPath }: { materialPath: string }) {
+export function Normal({ materialPath }: { materialPath: string }) {
   function submitHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
   }
@@ -12,7 +12,7 @@ export function Height({ materialPath }: { materialPath: string }) {
     async function init() {
       const res = await invoke("select_texture_file", {
         materialPath,
-        texture: "height",
+        texture: "normal",
       });
       console.log(res);
     }

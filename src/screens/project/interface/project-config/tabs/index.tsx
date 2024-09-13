@@ -3,6 +3,7 @@
 
 import { Color } from "./color";
 import { Height } from "./height";
+import { Normal } from "./normal";
 import { Smooth } from "./smooth";
 import { Rough } from "./rough";
 
@@ -25,7 +26,11 @@ export function DefaultTab({
       break;
 
     case "Height":
-      Component = <Height />;
+      Component = <Height materialPath={materialPath} />;
+      break;
+
+    case "Normal":
+      Component = <Normal materialPath={materialPath} />;
       break;
 
     case "Smoothness":
