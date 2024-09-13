@@ -1,6 +1,6 @@
 use image::Rgba;
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct MatYml {
     // pub color: Option<DefaultsGreyscale>,
     pub normal: Option<Normal>,
@@ -12,17 +12,23 @@ pub struct MatYml {
     pub emissive: Option<DefaultsGreyscale>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct DefaultsGreyscale {
     pub value: Option<f32>,
     pub scale: Option<f32>,
     pub shift: Option<f32>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Normal {
     pub curve_x: Option<usize>,
     pub curve_y: Option<usize>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct ExtendedGreyscale {
+    pub use_og: bool,
+    pub values: DefaultsGreyscale,
 }
 
 pub struct TextureFile {

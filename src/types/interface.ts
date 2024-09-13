@@ -15,3 +15,9 @@ export const textureFilesOptions = [
   "Emissive",
 ] as const;
 export type TextureFilesTypes = (typeof textureFilesOptions)[number];
+
+export interface DefaultsGreyscale {
+  value: number | null;
+  shift: number | null;
+  scale: number | null;
+}

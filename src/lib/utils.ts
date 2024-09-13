@@ -24,3 +24,7 @@ export function titleString(str: string): string {
     .map((s) => s[0].charAt(0).toUpperCase() + s.slice(1))
     .join(" ");
 }
+
+export function isNumber(value: any) {
+  return /^-?\d*(\.\d+)?$/.test(value);
+}

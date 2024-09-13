@@ -8,7 +8,7 @@ use std::{
 use base64::{engine::general_purpose, Engine};
 use image::{DynamicImage, ImageBuffer, Luma, Pixel};
 use regex::Regex;
-use structs::{MatYml, TextureFile, TEXTURE_FILES};
+use structs::{DefaultsGreyscale, ExtendedGreyscale, MatYml, TextureFile, TEXTURE_FILES};
 use tauri::Emitter;
 
 use super::utils::simple_toast;
@@ -91,15 +91,70 @@ pub fn select_texture_file(
             "No file matching the pattern for '{}' found in the directory.",
             texture
         ))?;
-        return send_base64_image(file, texture_file, true, mat_yml, app);
+
+        let _ = send_base64_image(file, texture_file, true, mat_yml.clone(), app);
     } else if !original_exists && texture_file.alternate.is_some() {
         let file = find_matching_file(texture_file.alternate.unwrap());
         match file {
-            Some(file) => return send_base64_image(file, texture_file, false, mat_yml, app),
-            None => return send_base64_image_default(texture_file, original_exists, app),
+            Some(file) => {
+                let _ = send_base64_image(file, texture_file, false, mat_yml.clone(), app);
+            }
+            None => {
+                let _ = send_base64_image_default(texture_file, original_exists, app);
+            }
         }
+    }
+
+    let texture_properties = match texture_file.name {
+        "opacity" => mat_yml.opacity,
+        "rough" => mat_yml.rough,
+        "smooth" => mat_yml.smooth,
+        "porosity" => mat_yml.porosity,
+        "sss" => mat_yml.sss,
+        "emissive" => mat_yml.emissive,
+        _ => None,
+    };
+
+    if let Some(values) = texture_properties {
+        let unwrapped_values = DefaultsGreyscale {
+            value: Some(values.value.unwrap_or(0.0)),
+            shift: Some(values.shift.unwrap_or(0.0)),
+            scale: Some(values.scale.unwrap_or(1.0)),
+        };
+        let extended_res = ExtendedGreyscale {
+            use_og: original_exists && texture_file.alternate.is_some(),
+            values: unwrapped_values,
+        };
+        let serialized_values = serde_json::to_string(&extended_res).map_err(|e| {
+            let err = format!("Failed to deserialise mat.yml file {}", e);
+            eprintln!("{}", err);
+            return err;
+        });
+
+        match serialized_values {
+            Ok(values) => return Ok(values),
+            Err(e) => return Err(e),
+        };
     } else {
-        Err(String::from("Failed to get texture."))
+        let values = DefaultsGreyscale {
+            value: Some(0.0),
+            shift: Some(0.0),
+            scale: Some(1.0),
+        };
+        let extended_res = ExtendedGreyscale {
+            use_og: original_exists && texture_file.alternate.is_some(),
+            values,
+        };
+        let serialized_values = serde_json::to_string(&extended_res).map_err(|e| {
+            let err = format!("Failed to deserialise mat.yml file {}", e);
+            eprintln!("{}", err);
+            return err;
+        });
+
+        match serialized_values {
+            Ok(values) => return Ok(values),
+            Err(e) => return Err(e),
+        };
     }
 }
 
@@ -125,6 +180,7 @@ fn send_base64_image(
             .contains(&texture_file.name)
         {
             let texture_properties = match texture_file.name {
+                "opacity" => mat_yml.opacity,
                 "rough" => {
                     if use_og {
                         mat_yml.rough
@@ -139,18 +195,25 @@ fn send_base64_image(
                         mat_yml.rough
                     }
                 }
+                "porosity" => mat_yml.porosity,
+                "sss" => mat_yml.sss,
+                "emissive" => mat_yml.emissive,
                 _ => None,
             };
 
             if let Some(texture) = &texture_properties {
-                let _value = texture.value.unwrap_or(0.0);
+                let value = texture.value.unwrap_or(0.0);
                 let shift = texture.shift.unwrap_or(0.0);
                 let scale = texture.scale.unwrap_or(1.0);
 
                 for pixel in luma_img.pixels_mut() {
-                    let current_value = pixel.0[0] as f32 / 255.0;
-                    let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
-                    pixel.0[0] = (new_value * 255.0) as u8;
+                    if (value >= 0.0 || value < 0.0) && value != 0.0 {
+                        pixel.0[0] = value.clamp(0.0, 255.0) as u8;
+                    } else {
+                        let current_value = pixel.0[0] as f32 / 255.0;
+                        let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
+                        pixel.0[0] = (new_value * 255.0) as u8;
+                    }
                 }
             }
         }
@@ -208,4 +271,126 @@ fn invert_img(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> DynamicImage {
         Luma([255 - pixel[0]])
     });
     DynamicImage::ImageLuma8(inverted)
+}
+
+#[tauri::command]
+pub fn update_defaults_greyscale(
+    material_path: String,
+    texture: String,
+    value: String,
+    shift: String,
+    scale: String,
+) -> Result<bool, String> {
+    let path = Path::new(&material_path);
+    if !path.exists() {
+        return Err(String::from("Selected path does not exist."));
+    }
+
+    let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
+        let err = format!("Failed to read mat.yml file {}\n {}", material_path, e);
+        eprintln!("{}", err);
+        return err;
+    })?;
+    let mut mat_yml: MatYml = serde_yaml::from_str(&mat_yml_str).map_err(|e| {
+        let err = format!("Failed to deserialise mat.yml file {}", e);
+        eprintln!("{}", err);
+        return err;
+    })?;
+
+    let parsed_value = value.parse::<f32>().unwrap_or(0.0);
+    let parsed_shift = shift.parse::<f32>().unwrap_or(0.0);
+    let parsed_scale = scale.parse::<f32>().unwrap_or(0.0);
+
+    match texture.as_str() {
+        "opacity" => {
+            if let Some(opacity) = mat_yml.opacity.as_mut() {
+                opacity.value = Some(parsed_value);
+                opacity.shift = Some(parsed_shift);
+                opacity.scale = Some(parsed_scale);
+            } else {
+                mat_yml.opacity = Some(DefaultsGreyscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        "rough" => {
+            if let Some(rough) = mat_yml.rough.as_mut() {
+                rough.value = Some(parsed_value);
+                rough.shift = Some(parsed_shift);
+                rough.scale = Some(parsed_scale);
+            } else {
+                mat_yml.rough = Some(DefaultsGreyscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        "smooth" => {
+            if let Some(smooth) = mat_yml.smooth.as_mut() {
+                smooth.value = Some(parsed_value);
+                smooth.shift = Some(parsed_shift);
+                smooth.scale = Some(parsed_scale);
+            } else {
+                mat_yml.smooth = Some(DefaultsGreyscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        "porosity" => {
+            if let Some(porosity) = mat_yml.porosity.as_mut() {
+                porosity.value = Some(parsed_value);
+                porosity.shift = Some(parsed_shift);
+                porosity.scale = Some(parsed_scale);
+            } else {
+                mat_yml.porosity = Some(DefaultsGreyscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        "sss" => {
+            if let Some(sss) = mat_yml.sss.as_mut() {
+                sss.value = Some(parsed_value);
+                sss.shift = Some(parsed_shift);
+                sss.scale = Some(parsed_scale);
+            } else {
+                mat_yml.sss = Some(DefaultsGreyscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                });
+            }
+        }
+        "emissive" => {
+            if let Some(emissive) = mat_yml.emissive.as_mut() {
+                emissive.value = Some(parsed_value);
+                emissive.shift = Some(parsed_shift);
+                emissive.scale = Some(parsed_scale);
+            } else {
+                mat_yml.emissive = Some(DefaultsGreyscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        _ => (),
+    }
+
+    let updated_mat_yml = serde_yaml::to_string(&mat_yml).map_err(|e| {
+        let err = format!("Failed to deserialise mat.yml file {}", e);
+        eprintln!("{}", err);
+        return err;
+    })?;
+
+    match fs::write(&path.join("mat.yml"), updated_mat_yml) {
+        Ok(()) => return Ok(true),
+        Err(e) => return Err(e.to_string()),
+    }
 }
