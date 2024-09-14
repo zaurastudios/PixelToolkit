@@ -34,7 +34,6 @@ anyhow = "1.0.87"
 regex = "1.10.6"
 base64 = "0.22.1"
 
-
 [dependencies.uuid]
 version = "1.10.0"
 features = [

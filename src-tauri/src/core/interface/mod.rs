@@ -1,17 +1,16 @@
 pub mod structs;
+use rayon::prelude::*;
 
 use std::{
-    fs::{self, DirEntry},
+    fs::{self},
     path::Path,
+    sync::Arc,
 };
 
 use base64::{engine::general_purpose, Engine};
 use image::{DynamicImage, ImageBuffer, Luma, Pixel};
-use regex::Regex;
 use structs::{DefaultsGrayscale, ExtendedGrayscale, MatYml, TextureFile, TEXTURE_FILES};
 use tauri::Emitter;
-
-use super::utils::simple_toast;
 
 #[tauri::command]
 pub fn select_texture(material_path: String, app: tauri::AppHandle) -> Result<String, String> {
@@ -62,278 +61,195 @@ pub fn select_texture_file(
             )
         })?;
 
-    let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
-        let err = format!("Failed to read mat.yml file {}\n {}", material_path, e);
-        eprintln!("{}", err);
-        return err;
-    })?;
-    let mat_yml: MatYml = serde_yaml::from_str(&mat_yml_str).map_err(|e| {
-        let err = format!("Failed to deserialise mat.yml file {}", e);
-        eprintln!("{}", err);
-        return err;
-    })?;
+    let mat_yml: Arc<MatYml> = Arc::new(load_mat_yml(path)?);
 
-    let find_matching_file = |pattern: &str| -> Option<DirEntry> {
-        fs::read_dir(path)
-            .ok()?
-            .filter_map(Result::ok)
-            .find(|entry| {
-                entry.file_name().to_str().map_or(false, |file_name| {
-                    Regex::new(pattern).ok().unwrap().is_match(file_name)
-                })
-            })
-    };
+    let (base64_image, original_exists) = process_image(path, texture_file, mat_yml.clone())?;
 
-    let original_exists = find_matching_file(texture_file.pattern).is_some();
+    app.emit("selected-texture-file", base64_image.clone())
+        .map_err(|e| format!("Failed to emit event: {}", e))?;
 
-    if original_exists {
-        let file = find_matching_file(&texture_file.pattern).ok_or(format!(
-            "No file matching the pattern for '{}' found in the directory.",
-            texture
-        ))?;
-
-        let _ = send_base64_image(file, texture_file, true, mat_yml.clone(), app);
-    } else if !original_exists && texture_file.alternate.is_some() {
-        let file = find_matching_file(texture_file.alternate.unwrap());
-        if file.is_some() {
-            let _ = send_base64_image(file.unwrap(), texture_file, false, mat_yml.clone(), app);
-        } else {
-            let _ = send_base64_image_default(texture_file, true, mat_yml.clone(), app);
-        }
-    } else {
-        let _ = send_base64_image_default(texture_file, true, mat_yml.clone(), app);
-    }
-
-    let texture_properties = match texture_file.name {
-        "opacity" => mat_yml.opacity,
-        "rough" => mat_yml.rough,
-        "smooth" => mat_yml.smooth,
-        "metal" => mat_yml.metal,
-        "f0" => mat_yml.f0,
-        "porosity" => mat_yml.porosity,
-        "sss" => mat_yml.sss,
-        "emissive" => mat_yml.emissive,
-        _ => None,
-    };
-
-    if let Some(values) = texture_properties {
-        let unwrapped_values = DefaultsGrayscale {
-            value: Some(values.value.unwrap_or(0.0)),
-            shift: Some(values.shift.unwrap_or(0.0)),
-            scale: Some(values.scale.unwrap_or(1.0)),
-        };
-        let extended_res = ExtendedGrayscale {
-            use_og: !original_exists && texture_file.alternate.is_some(),
-            values: unwrapped_values,
-        };
-        let serialized_values = serde_json::to_string(&extended_res).map_err(|e| {
-            let err = format!("Failed to deserialise mat.yml file {}", e);
-            eprintln!("{}", err);
-            return err;
-        });
-
-        match serialized_values {
-            Ok(values) => return Ok(values),
-            Err(e) => return Err(e),
-        };
-    } else {
-        let values = DefaultsGrayscale {
+    let texture_properties = get_texture_properties(&texture_file.name, &mat_yml);
+    let extended_res = ExtendedGrayscale {
+        use_og: original_exists || texture_file.alternate.is_none(),
+        values: texture_properties.unwrap_or(DefaultsGrayscale {
             value: Some(0.0),
             shift: Some(0.0),
             scale: Some(1.0),
-        };
-        let extended_res = ExtendedGrayscale {
-            use_og: original_exists && texture_file.alternate.is_some(),
-            values,
-        };
-        let serialized_values = serde_json::to_string(&extended_res).map_err(|e| {
-            let err = format!("Failed to deserialise mat.yml file {}", e);
-            eprintln!("{}", err);
-            return err;
-        });
+        }),
+    };
 
-        match serialized_values {
-            Ok(values) => return Ok(values),
-            Err(e) => return Err(e),
-        };
-    }
+    serde_json::to_string(&extended_res).map_err(|e| {
+        let err = format!("Failed to serialize extended grayscale: {}", e);
+        eprintln!("{}", err);
+        err
+    })
 }
 
-fn send_base64_image(
-    file: DirEntry,
-    texture_file: &TextureFile,
-    use_og: bool,
-    mat_yml: MatYml,
-    app: tauri::AppHandle,
-) -> Result<String, String> {
-    let img = image::open(file.path()).map_err(|e| {
-        simple_toast(format!("Failed to open image: {}", e), app.clone());
-        format!("Failed to open image: {}", e)
+fn load_mat_yml(path: &Path) -> Result<MatYml, String> {
+    let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
+        let err = format!("Failed to read mat.yml file: {}", e);
+        eprintln!("{}", err);
+        err
     })?;
+    serde_yaml::from_str(&mat_yml_str).map_err(|e| {
+        let err = format!("Failed to deserialise mat.yml file: {}", e);
+        eprintln!("{}", err);
+        err
+    })
+}
 
-    let mut buf = vec![];
-    let mut cursor = std::io::Cursor::new(&mut buf);
-
-    let mut luma_img = img.clone().into_luma8();
-
-    if texture_file.grayscale {
-        if [
-            "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
-        ]
-        .contains(&texture_file.name)
-        {
-            let texture_properties = match texture_file.name {
-                "opacity" => mat_yml.opacity,
-                "rough" => {
-                    if use_og {
-                        mat_yml.rough
-                    } else {
-                        mat_yml.smooth
-                    }
+fn process_image(
+    path: &Path,
+    texture_file: &TextureFile,
+    mat_yml: Arc<MatYml>,
+) -> Result<(String, bool), String> {
+    let img = match find_matching_file(path, texture_file.pattern) {
+        Some(file) => {
+            image::open(file.path()).map_err(|e| format!("Failed to open image: {}", e))?
+        }
+        None => {
+            if let Some(alt_pattern) = texture_file.alternate {
+                if let Some(alt_file) = find_matching_file(path, alt_pattern) {
+                    image::open(alt_file.path())
+                        .map_err(|e| format!("Failed to open image: {}", e))?
+                } else {
+                    create_default_image(texture_file, false)
                 }
-                "smooth" => {
-                    if use_og {
-                        mat_yml.smooth
-                    } else {
-                        mat_yml.rough
-                    }
-                }
-                "metal" => mat_yml.metal,
-                "f0" => mat_yml.f0,
-                "porosity" => mat_yml.porosity,
-                "sss" => mat_yml.sss,
-                "emissive" => mat_yml.emissive,
-                _ => None,
-            };
-
-            if let Some(texture) = &texture_properties {
-                let value = texture.value.unwrap_or(0.0);
-                let shift = texture.shift.unwrap_or(0.0);
-                let scale = texture.scale.unwrap_or(1.0);
-
-                for pixel in luma_img.pixels_mut() {
-                    if (value >= 0.0 || value < 0.0) && value != 0.0 {
-                        pixel.0[0] = value.clamp(0.0, 255.0) as u8;
-                    } else {
-                        let current_value = pixel.0[0] as f32 / 255.0;
-                        let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
-                        pixel.0[0] = (new_value * 255.0) as u8;
-                    }
-                }
+            } else {
+                create_default_image(texture_file, true)
             }
         }
+    };
 
-        let final_img = if !use_og {
-            invert_img(luma_img)
-        } else {
-            DynamicImage::ImageLuma8(luma_img)
-        };
-        final_img.write_to(&mut cursor, image::ImageFormat::Png)
+    let original_exists = img.width() > 16;
+    let processed_img = if texture_file.grayscale {
+        process_grayscale_image(&img, texture_file, original_exists, &mat_yml)
     } else {
-        img.write_to(&mut cursor, image::ImageFormat::Png)
-    }
-    .map_err(|e| format!("Failed to write image: {}", e))?;
+        img
+    };
 
-    let res_base64 = general_purpose::STANDARD.encode(&buf);
-
-    app.emit("selected-texture-file", res_base64.clone())
-        .map_err(|e| format!("Failed to emit event: {}", e))?;
-
-    Ok(res_base64)
+    let base64 = encode_image_to_base64(&processed_img)?;
+    Ok((base64, original_exists))
 }
 
-fn send_base64_image_default(
-    texture_file: &TextureFile,
-    use_og: bool,
-    mat_yml: MatYml,
-    app: tauri::AppHandle,
-) -> Result<String, String> {
-    let color = if texture_file.alternate.is_some() && !use_og {
+fn find_matching_file(path: &Path, pattern: &str) -> Option<fs::DirEntry> {
+    fs::read_dir(path)
+        .ok()?
+        .filter_map(Result::ok)
+        .find(|entry| {
+            entry.file_name().to_str().map_or(false, |file_name| {
+                regex::Regex::new(pattern).ok().unwrap().is_match(file_name)
+            })
+        })
+}
+
+fn create_default_image(texture_file: &TextureFile, use_og: bool) -> DynamicImage {
+    let color = if !use_og && texture_file.alternate.is_some() {
         texture_file.default_color.map_without_alpha(|e| 255 - e)
     } else {
         texture_file.default_color
     };
-    let img = image::ImageBuffer::from_pixel(16, 16, color);
-    let dynamic_img = image::DynamicImage::ImageRgba8(img);
-
-    let mut buf = vec![];
-    let mut cursor = std::io::Cursor::new(&mut buf);
-
-    if texture_file.grayscale {
-        let mut luma_img = dynamic_img.into_luma8();
-        if [
-            "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
-        ]
-        .contains(&texture_file.name)
-        {
-            let texture_properties = match texture_file.name {
-                "opacity" => mat_yml.opacity,
-                "rough" => {
-                    if use_og {
-                        mat_yml.rough
-                    } else {
-                        mat_yml.smooth
-                    }
-                }
-                "smooth" => {
-                    if use_og {
-                        mat_yml.smooth
-                    } else {
-                        mat_yml.rough
-                    }
-                }
-                "metal" => mat_yml.metal,
-                "f0" => mat_yml.f0,
-                "porosity" => mat_yml.porosity,
-                "sss" => mat_yml.sss,
-                "emissive" => mat_yml.emissive,
-                _ => None,
-            };
-
-            if let Some(texture) = &texture_properties {
-                let value = texture.value.unwrap_or(0.0);
-                let shift = texture.shift.unwrap_or(0.0);
-                let scale = texture.scale.unwrap_or(1.0);
-
-                for pixel in luma_img.pixels_mut() {
-                    if (value >= 0.0 || value < 0.0) && value != 0.0 {
-                        pixel.0[0] = value.clamp(0.0, 255.0) as u8;
-                    } else {
-                        let current_value = pixel.0[0] as f32 / 255.0;
-                        let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
-                        pixel.0[0] = (new_value * 255.0) as u8;
-                    }
-                }
-            }
-        }
-
-        let final_img = if !use_og {
-            invert_img(luma_img)
-        } else {
-            DynamicImage::ImageLuma8(luma_img)
-        };
-        let _ = final_img.write_to(&mut cursor, image::ImageFormat::Png);
-    } else {
-        dynamic_img
-            .write_to(&mut cursor, image::ImageFormat::Png)
-            .map_err(|e| format!("Failed to write default image: {}", e))?;
-    }
-
-    let res_base64 = general_purpose::STANDARD.encode(&buf);
-
-    app.emit("selected-texture-file", res_base64.clone())
-        .map_err(|e| format!("Failed to emit event: {}", e))?;
-
-    Ok(res_base64)
+    DynamicImage::ImageRgba8(ImageBuffer::from_pixel(16, 16, color))
 }
 
-fn invert_img(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> DynamicImage {
+fn process_grayscale_image(
+    img: &DynamicImage,
+    texture_file: &TextureFile,
+    use_og: bool,
+    mat_yml: &MatYml,
+) -> DynamicImage {
+    let luma_img = img.to_luma8();
+    let (width, height) = luma_img.dimensions();
+
+    if [
+        "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
+    ]
+    .contains(&texture_file.name)
+    {
+        if let Some(texture) = get_texture_properties(&texture_file.name, mat_yml) {
+            let processed = process_pixels_parallel(luma_img, width, height, &texture);
+            return if !use_og {
+                DynamicImage::ImageLuma8(invert_img_parallel(processed))
+            } else {
+                DynamicImage::ImageLuma8(processed)
+            };
+        }
+    }
+
+    if !use_og {
+        DynamicImage::ImageLuma8(invert_img_parallel(luma_img))
+    } else {
+        DynamicImage::ImageLuma8(luma_img)
+    }
+}
+
+fn process_pixels_parallel(
+    img: ImageBuffer<Luma<u8>, Vec<u8>>,
+    width: u32,
+    height: u32,
+    texture: &DefaultsGrayscale,
+) -> ImageBuffer<Luma<u8>, Vec<u8>> {
+    let value = texture.value.unwrap_or(0.0);
+    let shift = texture.shift.unwrap_or(0.0);
+    let scale = texture.scale.unwrap_or(1.0);
+
+    let pixels: Arc<[u8]> = Arc::from(img.into_raw());
+    let chunk_size = (width * height / rayon::current_num_threads() as u32).max(1);
+
+    let processed: Vec<u8> = pixels
+        .par_chunks(chunk_size as usize)
+        .flat_map(|chunk| {
+            chunk
+                .iter()
+                .map(|&pixel| {
+                    if value != 0.0 {
+                        value.clamp(0.0, 255.0) as u8
+                    } else {
+                        let current_value = pixel as f32 / 255.0;
+                        let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
+                        (new_value * 255.0) as u8
+                    }
+                })
+                .collect::<Vec<u8>>()
+        })
+        .collect();
+
+    ImageBuffer::from_raw(width, height, processed).unwrap()
+}
+
+fn invert_img_parallel(img: ImageBuffer<Luma<u8>, Vec<u8>>) -> ImageBuffer<Luma<u8>, Vec<u8>> {
     let (width, height) = img.dimensions();
-    let inverted = ImageBuffer::from_fn(width, height, |x, y| {
-        let pixel = img.get_pixel(x, y);
-        Luma([255 - pixel[0]])
-    });
-    DynamicImage::ImageLuma8(inverted)
+    let pixels: Arc<[u8]> = Arc::from(img.into_raw());
+    let chunk_size = (width * height / rayon::current_num_threads() as u32).max(1);
+
+    let inverted: Vec<u8> = pixels
+        .par_chunks(chunk_size as usize)
+        .flat_map(|chunk| chunk.iter().map(|&pixel| 255 - pixel).collect::<Vec<u8>>())
+        .collect();
+
+    ImageBuffer::from_raw(width, height, inverted).unwrap()
+}
+
+fn encode_image_to_base64(img: &DynamicImage) -> Result<String, String> {
+    let mut buf = Vec::new();
+    img.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png)
+        .map_err(|e| format!("Failed to write image: {}", e))?;
+
+    Ok(general_purpose::STANDARD.encode(&buf))
+}
+
+fn get_texture_properties(texture_name: &str, mat_yml: &MatYml) -> Option<DefaultsGrayscale> {
+    match texture_name {
+        "opacity" => mat_yml.opacity.clone(),
+        "rough" => mat_yml.rough.clone(),
+        "smooth" => mat_yml.smooth.clone(),
+        "metal" => mat_yml.metal.clone(),
+        "f0" => mat_yml.f0.clone(),
+        "porosity" => mat_yml.porosity.clone(),
+        "sss" => mat_yml.sss.clone(),
+        "emissive" => mat_yml.emissive.clone(),
+        _ => None,
+    }
 }
 
 #[tauri::command]
@@ -352,134 +268,43 @@ pub fn update_defaults_grayscale(
     let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
         let err = format!("Failed to read mat.yml file {}\n {}", material_path, e);
         eprintln!("{}", err);
-        return err;
+        err
     })?;
     let mut mat_yml: MatYml = serde_yaml::from_str(&mat_yml_str).map_err(|e| {
         let err = format!("Failed to deserialise mat.yml file {}", e);
         eprintln!("{}", err);
-        return err;
+        err
     })?;
 
-    let parsed_value = value.parse::<f32>().unwrap_or(0.0);
+    let parsed_value = value.parse::<f32>().unwrap_or(0.0).clamp(0.0, 255.0);
     let parsed_shift = shift.parse::<f32>().unwrap_or(0.0);
-    let parsed_scale = scale.parse::<f32>().unwrap_or(0.0);
+    let parsed_scale = scale.parse::<f32>().unwrap_or(1.0);
+
+    let new_defaults = DefaultsGrayscale {
+        value: Some(parsed_value),
+        shift: Some(parsed_shift),
+        scale: Some(parsed_scale),
+    };
 
     match texture.as_str() {
-        "opacity" => {
-            if let Some(opacity) = mat_yml.opacity.as_mut() {
-                opacity.value = Some(parsed_value);
-                opacity.shift = Some(parsed_shift);
-                opacity.scale = Some(parsed_scale);
-            } else {
-                mat_yml.opacity = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
-        "rough" => {
-            if let Some(rough) = mat_yml.rough.as_mut() {
-                rough.value = Some(parsed_value);
-                rough.shift = Some(parsed_shift);
-                rough.scale = Some(parsed_scale);
-            } else {
-                mat_yml.rough = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
-        "smooth" => {
-            if let Some(smooth) = mat_yml.smooth.as_mut() {
-                smooth.value = Some(parsed_value);
-                smooth.shift = Some(parsed_shift);
-                smooth.scale = Some(parsed_scale);
-            } else {
-                mat_yml.smooth = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
-        "metal" => {
-            if let Some(porosity) = mat_yml.metal.as_mut() {
-                porosity.value = Some(parsed_value);
-                porosity.shift = Some(parsed_shift);
-                porosity.scale = Some(parsed_scale);
-            } else {
-                mat_yml.porosity = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
-        "f0" => {
-            if let Some(porosity) = mat_yml.f0.as_mut() {
-                porosity.value = Some(parsed_value);
-                porosity.shift = Some(parsed_shift);
-                porosity.scale = Some(parsed_scale);
-            } else {
-                mat_yml.porosity = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
-        "porosity" => {
-            if let Some(porosity) = mat_yml.porosity.as_mut() {
-                porosity.value = Some(parsed_value);
-                porosity.shift = Some(parsed_shift);
-                porosity.scale = Some(parsed_scale);
-            } else {
-                mat_yml.porosity = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
-        "sss" => {
-            if let Some(sss) = mat_yml.sss.as_mut() {
-                sss.value = Some(parsed_value);
-                sss.shift = Some(parsed_shift);
-                sss.scale = Some(parsed_scale);
-            } else {
-                mat_yml.sss = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                });
-            }
-        }
-        "emissive" => {
-            if let Some(emissive) = mat_yml.emissive.as_mut() {
-                emissive.value = Some(parsed_value);
-                emissive.shift = Some(parsed_shift);
-                emissive.scale = Some(parsed_scale);
-            } else {
-                mat_yml.emissive = Some(DefaultsGrayscale {
-                    value: Some(0.0),
-                    shift: Some(0.0),
-                    scale: Some(1.0),
-                })
-            }
-        }
+        "opacity" => mat_yml.opacity = Some(new_defaults),
+        "rough" => mat_yml.rough = Some(new_defaults),
+        "smooth" => mat_yml.smooth = Some(new_defaults),
+        "metal" => mat_yml.metal = Some(new_defaults),
+        "f0" => mat_yml.f0 = Some(new_defaults),
+        "porosity" => mat_yml.porosity = Some(new_defaults),
+        "sss" => mat_yml.sss = Some(new_defaults),
+        "emissive" => mat_yml.emissive = Some(new_defaults),
         _ => (),
     }
 
     let updated_mat_yml = serde_yaml::to_string(&mat_yml).map_err(|e| {
-        let err = format!("Failed to deserialise mat.yml file {}", e);
+        let err = format!("Failed to serialize mat.yml file {}", e);
         eprintln!("{}", err);
-        return err;
+        err
     })?;
 
-    match fs::write(&path.join("mat.yml"), updated_mat_yml) {
-        Ok(()) => return Ok(true),
-        Err(e) => return Err(e.to_string()),
-    }
+    fs::write(&path.join("mat.yml"), updated_mat_yml).map_err(|e| e.to_string())?;
+
+    Ok(true)
 }
