@@ -7,7 +7,13 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { titleString } from "@/lib/utils";
-import * as Select from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { listen } from "@tauri-apps/api/event";
 
 import { DefaultTab } from "./tabs";
@@ -64,24 +70,21 @@ export default function ProjectConfig({
         </TooltipProvider>
       </div>
 
-      <Select.Select
-        onValueChange={(e) => setTextureFile(e as TextureFilesTypes)}
+      <Select
+        onValueChange={(e: any) => setTextureFile(e as TextureFilesTypes)}
       >
-        <Select.SelectTrigger disabled={!materialPath} className="w-full">
-          <Select.SelectValue
-            placeholder={textureFile}
-            defaultValue={textureFile}
-          />
-        </Select.SelectTrigger>
+        <SelectTrigger disabled={!materialPath} className="w-full">
+          <SelectValue placeholder={textureFile} defaultValue={textureFile} />
+        </SelectTrigger>
 
-        <Select.SelectContent>
+        <SelectContent className="max-h-none">
           {textureFilesOptions.map((t) => (
-            <Select.SelectItem key={t} value={t}>
+            <SelectItem key={t} value={t}>
               {t}
-            </Select.SelectItem>
+            </SelectItem>
           ))}
-        </Select.SelectContent>
-      </Select.Select>
+        </SelectContent>
+      </Select>
 
       {!!materialPath && tabOption === "normal" && (
         <DefaultTab

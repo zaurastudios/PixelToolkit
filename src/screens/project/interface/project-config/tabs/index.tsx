@@ -62,6 +62,26 @@ export function DefaultTab({
       );
       break;
 
+    case "Metal":
+      Component = (
+        <Grayscale
+          materialPath={materialPath}
+          texture="metal"
+          textureFileOption={textureFileOption}
+        />
+      );
+      break;
+
+    case "F0":
+      Component = (
+        <Grayscale
+          materialPath={materialPath}
+          texture="f0"
+          textureFileOption={textureFileOption}
+        />
+      );
+      break;
+
     case "Porosity":
       Component = (
         <Grayscale

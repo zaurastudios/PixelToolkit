@@ -6,7 +6,6 @@ import { DefaultsGrayscale } from "@/types/interface";
 import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDebounce } from "react-use";
 import { toast } from "sonner";
 
 export function Grayscale({

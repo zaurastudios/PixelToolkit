@@ -8,6 +8,8 @@ pub struct MatYml {
     pub smooth: Option<DefaultsGrayscale>,
     pub rough: Option<DefaultsGrayscale>,
     pub porosity: Option<DefaultsGrayscale>,
+    pub metal: Option<DefaultsGrayscale>,
+    pub f0: Option<DefaultsGrayscale>,
     pub sss: Option<DefaultsGrayscale>,
     pub emissive: Option<DefaultsGrayscale>,
 }

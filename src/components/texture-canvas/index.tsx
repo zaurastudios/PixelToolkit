@@ -1,7 +1,7 @@
 import { TextureFilesTypes } from "@/types/interface";
 
 import { useKeyboardShortcut } from "@/lib/use-keyboard-shortcut";
-import { OrbitControls, OrbitControlsProps, Stats } from "@react-three/drei";
+import { OrbitControls, OrbitControlsProps } from "@react-three/drei";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
@@ -25,6 +25,7 @@ export function TextureCanvas() {
 
   if (!selectedTexture) return null;
 
+  console.log(`data:image/png;base64,${selectedTexture}`);
   const texture = useLoader(
     TextureLoader,
     `data:image/png;base64,${selectedTexture}`,
@@ -45,7 +46,7 @@ export function TextureCanvas() {
     <CanvasWrapper>
       <mesh>
         <planeGeometry args={[planeWidth, planeHeight]} />
-        <meshBasicMaterial map={texture} />
+        <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
     </CanvasWrapper>
   );
@@ -93,7 +94,6 @@ const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
     <Canvas>
       {children}
       <CameraController />
-      <Stats />
     </Canvas>
   );
 };

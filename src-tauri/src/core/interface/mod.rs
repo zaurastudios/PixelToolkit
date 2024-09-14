@@ -95,20 +95,21 @@ pub fn select_texture_file(
         let _ = send_base64_image(file, texture_file, true, mat_yml.clone(), app);
     } else if !original_exists && texture_file.alternate.is_some() {
         let file = find_matching_file(texture_file.alternate.unwrap());
-        match file {
-            Some(file) => {
-                let _ = send_base64_image(file, texture_file, false, mat_yml.clone(), app);
-            }
-            None => {
-                let _ = send_base64_image_default(texture_file, original_exists, app);
-            }
+        if file.is_some() {
+            let _ = send_base64_image(file.unwrap(), texture_file, false, mat_yml.clone(), app);
+        } else {
+            let _ = send_base64_image_default(texture_file, true, mat_yml.clone(), app);
         }
+    } else {
+        let _ = send_base64_image_default(texture_file, true, mat_yml.clone(), app);
     }
 
     let texture_properties = match texture_file.name {
         "opacity" => mat_yml.opacity,
         "rough" => mat_yml.rough,
         "smooth" => mat_yml.smooth,
+        "metal" => mat_yml.metal,
+        "f0" => mat_yml.f0,
         "porosity" => mat_yml.porosity,
         "sss" => mat_yml.sss,
         "emissive" => mat_yml.emissive,
@@ -176,8 +177,10 @@ fn send_base64_image(
     let mut luma_img = img.clone().into_luma8();
 
     if texture_file.grayscale {
-        if ["opacity", "smooth", "rough", "porosity", "sss", "emissive"]
-            .contains(&texture_file.name)
+        if [
+            "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
+        ]
+        .contains(&texture_file.name)
         {
             let texture_properties = match texture_file.name {
                 "opacity" => mat_yml.opacity,
@@ -195,6 +198,8 @@ fn send_base64_image(
                         mat_yml.rough
                     }
                 }
+                "metal" => mat_yml.metal,
+                "f0" => mat_yml.f0,
                 "porosity" => mat_yml.porosity,
                 "sss" => mat_yml.sss,
                 "emissive" => mat_yml.emissive,
@@ -240,6 +245,7 @@ fn send_base64_image(
 fn send_base64_image_default(
     texture_file: &TextureFile,
     use_og: bool,
+    mat_yml: MatYml,
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let color = if texture_file.alternate.is_some() && !use_og {
@@ -252,9 +258,66 @@ fn send_base64_image_default(
 
     let mut buf = vec![];
     let mut cursor = std::io::Cursor::new(&mut buf);
-    dynamic_img
-        .write_to(&mut cursor, image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to write default image: {}", e))?;
+
+    if texture_file.grayscale {
+        let mut luma_img = dynamic_img.into_luma8();
+        if [
+            "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
+        ]
+        .contains(&texture_file.name)
+        {
+            let texture_properties = match texture_file.name {
+                "opacity" => mat_yml.opacity,
+                "rough" => {
+                    if use_og {
+                        mat_yml.rough
+                    } else {
+                        mat_yml.smooth
+                    }
+                }
+                "smooth" => {
+                    if use_og {
+                        mat_yml.smooth
+                    } else {
+                        mat_yml.rough
+                    }
+                }
+                "metal" => mat_yml.metal,
+                "f0" => mat_yml.f0,
+                "porosity" => mat_yml.porosity,
+                "sss" => mat_yml.sss,
+                "emissive" => mat_yml.emissive,
+                _ => None,
+            };
+
+            if let Some(texture) = &texture_properties {
+                let value = texture.value.unwrap_or(0.0);
+                let shift = texture.shift.unwrap_or(0.0);
+                let scale = texture.scale.unwrap_or(1.0);
+
+                for pixel in luma_img.pixels_mut() {
+                    if (value >= 0.0 || value < 0.0) && value != 0.0 {
+                        pixel.0[0] = value.clamp(0.0, 255.0) as u8;
+                    } else {
+                        let current_value = pixel.0[0] as f32 / 255.0;
+                        let new_value = ((current_value + shift) * scale).clamp(0.0, 1.0);
+                        pixel.0[0] = (new_value * 255.0) as u8;
+                    }
+                }
+            }
+        }
+
+        let final_img = if !use_og {
+            invert_img(luma_img)
+        } else {
+            DynamicImage::ImageLuma8(luma_img)
+        };
+        let _ = final_img.write_to(&mut cursor, image::ImageFormat::Png);
+    } else {
+        dynamic_img
+            .write_to(&mut cursor, image::ImageFormat::Png)
+            .map_err(|e| format!("Failed to write default image: {}", e))?;
+    }
 
     let res_base64 = general_purpose::STANDARD.encode(&buf);
 
@@ -335,6 +398,32 @@ pub fn update_defaults_grayscale(
                 smooth.scale = Some(parsed_scale);
             } else {
                 mat_yml.smooth = Some(DefaultsGrayscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        "metal" => {
+            if let Some(porosity) = mat_yml.metal.as_mut() {
+                porosity.value = Some(parsed_value);
+                porosity.shift = Some(parsed_shift);
+                porosity.scale = Some(parsed_scale);
+            } else {
+                mat_yml.porosity = Some(DefaultsGrayscale {
+                    value: Some(0.0),
+                    shift: Some(0.0),
+                    scale: Some(1.0),
+                })
+            }
+        }
+        "f0" => {
+            if let Some(porosity) = mat_yml.f0.as_mut() {
+                porosity.value = Some(parsed_value);
+                porosity.shift = Some(parsed_shift);
+                porosity.scale = Some(parsed_scale);
+            } else {
+                mat_yml.porosity = Some(DefaultsGrayscale {
                     value: Some(0.0),
                     shift: Some(0.0),
                     scale: Some(1.0),
