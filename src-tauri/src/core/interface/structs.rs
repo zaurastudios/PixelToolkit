@@ -2,18 +2,18 @@ use image::Rgba;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct MatYml {
-    // pub color: Option<DefaultsGreyscale>,
+    // pub color: Option<DefaultsGrayscale>,
     pub normal: Option<Normal>,
-    pub opacity: Option<DefaultsGreyscale>,
-    pub smooth: Option<DefaultsGreyscale>,
-    pub rough: Option<DefaultsGreyscale>,
-    pub porosity: Option<DefaultsGreyscale>,
-    pub sss: Option<DefaultsGreyscale>,
-    pub emissive: Option<DefaultsGreyscale>,
+    pub opacity: Option<DefaultsGrayscale>,
+    pub smooth: Option<DefaultsGrayscale>,
+    pub rough: Option<DefaultsGrayscale>,
+    pub porosity: Option<DefaultsGrayscale>,
+    pub sss: Option<DefaultsGrayscale>,
+    pub emissive: Option<DefaultsGrayscale>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct DefaultsGreyscale {
+pub struct DefaultsGrayscale {
     pub value: Option<f32>,
     pub scale: Option<f32>,
     pub shift: Option<f32>,
@@ -26,15 +26,15 @@ pub struct Normal {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct ExtendedGreyscale {
+pub struct ExtendedGrayscale {
     pub use_og: bool,
-    pub values: DefaultsGreyscale,
+    pub values: DefaultsGrayscale,
 }
 
 pub struct TextureFile {
     pub name: &'static str,
     pub pattern: &'static str,
-    pub greyscale: bool,
+    pub grayscale: bool,
     pub alternate: Option<&'static str>,
     pub default_color: Rgba<u8>,
 }
@@ -43,91 +43,91 @@ pub const TEXTURE_FILES: [TextureFile; 13] = [
     TextureFile {
         name: "color",
         pattern: r".*(albedo|color).*\.png$",
-        greyscale: false,
+        grayscale: false,
         alternate: None,
         default_color: Rgba([0, 0, 0, 255]),
     },
     TextureFile {
         name: "opacity",
         pattern: r".*opacity.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([255, 255, 255, 255]),
     },
     TextureFile {
         name: "height",
         pattern: r".*height.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([255, 255, 255, 255]),
     },
     TextureFile {
         name: "normal",
         pattern: r".*normal.*\.png$",
-        greyscale: false,
+        grayscale: false,
         alternate: None,
         default_color: Rgba([132, 131, 255, 255]),
     },
     TextureFile {
         name: "occlusion",
         pattern: r".*(occlusion|ao).*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([0, 0, 0, 0]),
     },
     TextureFile {
         name: "smooth",
         pattern: r".*smooth.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: Some(r".*rough.*\.png$"),
         default_color: Rgba([0, 0, 0, 255]),
     },
     TextureFile {
         name: "rough",
         pattern: r".*rough.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: Some(r".*smooth.*\.png$"),
         default_color: Rgba([255, 255, 255, 255]),
     },
     TextureFile {
         name: "metal",
         pattern: r".*metal.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([0, 0, 0, 255]),
     },
     TextureFile {
         name: "hcm",
         pattern: r".*hcm.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([0, 0, 0, 255]),
     },
     TextureFile {
         name: "f0",
         pattern: r".*f0.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([10, 10, 10, 255]),
     },
     TextureFile {
         name: "porosity",
         pattern: r".*porosity.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([0, 0, 0, 255]),
     },
     TextureFile {
         name: "sss",
         pattern: r".*sss.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([0, 0, 0, 255]),
     },
     TextureFile {
         name: "emissive",
         pattern: r".*emissive.*\.png$",
-        greyscale: true,
+        grayscale: true,
         alternate: None,
         default_color: Rgba([0, 0, 0, 255]),
     },

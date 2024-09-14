@@ -16,7 +16,7 @@ export const textureFilesOptions = [
 ] as const;
 export type TextureFilesTypes = (typeof textureFilesOptions)[number];
 
-export interface DefaultsGreyscale {
+export interface DefaultsGrayscale {
   value: number | null;
   shift: number | null;
   scale: number | null;

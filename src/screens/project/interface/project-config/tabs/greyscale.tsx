@@ -2,14 +2,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isNumber } from "@/lib/utils";
 import { AddAdditionalType } from "@/types";
-import { DefaultsGreyscale } from "@/types/interface";
+import { DefaultsGrayscale } from "@/types/interface";
 import { invoke } from "@tauri-apps/api/core";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "react-use";
 import { toast } from "sonner";
 
-export function Greyscale({
+export function Grayscale({
   materialPath,
   texture,
 }: {
@@ -18,7 +18,7 @@ export function Greyscale({
 }) {
   const naviagte = useNavigate();
 
-  const defaultValues: DefaultsGreyscale = {
+  const defaultValues: DefaultsGrayscale = {
     value: 0.0,
     shift: 0.0,
     scale: 1.0,
@@ -26,7 +26,7 @@ export function Greyscale({
 
   const [isInit, setIsInit] = useState(false);
   const [values, setValues] =
-    useState<AddAdditionalType<DefaultsGreyscale, string>>(defaultValues);
+    useState<AddAdditionalType<DefaultsGrayscale, string>>(defaultValues);
   const [disabled, setDisabled] = useState(false);
 
   function toString(o: Object) {
@@ -42,7 +42,7 @@ export function Greyscale({
     async () => {
       if (isInit) {
         try {
-          const res = await invoke("update_defaults_greyscale", {
+          const res = await invoke("update_defaults_grayscale", {
             materialPath,
             texture,
             ...toString(values),
@@ -66,7 +66,7 @@ export function Greyscale({
     if (e.key === "Escape" || e.key === "Enter") {
       const name = e.currentTarget.getAttribute(
         "name",
-      )! as keyof DefaultsGreyscale;
+      )! as keyof DefaultsGrayscale;
       const value = e.currentTarget.value;
 
       try {
@@ -98,7 +98,7 @@ export function Greyscale({
         materialPath,
         texture,
       });
-      const parsedRes: { use_og: boolean; values: DefaultsGreyscale } | string =
+      const parsedRes: { use_og: boolean; values: DefaultsGrayscale } | string =
         await JSON.parse(res);
       if (typeof parsedRes === "string") throw new Error(parsedRes);
 

@@ -2,7 +2,7 @@
 // import { TextureFilesTypes } from "..";
 
 import { Color } from "./color";
-import { Greyscale } from "./greyscale";
+import { Grayscale } from "./grayscale";
 import { Height } from "./height";
 import { Normal } from "./normal";
 
@@ -25,7 +25,7 @@ export function DefaultTab({
       break;
 
     case "Opacity":
-      Component = <Greyscale materialPath={materialPath} texture="opacity" />;
+      Component = <Grayscale materialPath={materialPath} texture="opacity" />;
       break;
 
     case "Height":
@@ -37,23 +37,23 @@ export function DefaultTab({
       break;
 
     case "Smoothness":
-      Component = <Greyscale materialPath={materialPath} texture="smooth" />;
+      Component = <Grayscale materialPath={materialPath} texture="smooth" />;
       break;
 
     case "Roughness":
-      Component = <Greyscale materialPath={materialPath} texture="rough" />;
+      Component = <Grayscale materialPath={materialPath} texture="rough" />;
       break;
 
     case "Porosity":
-      Component = <Greyscale materialPath={materialPath} texture="porosity" />;
+      Component = <Grayscale materialPath={materialPath} texture="porosity" />;
       break;
 
     case "SSS":
-      Component = <Greyscale materialPath={materialPath} texture="sss" />;
+      Component = <Grayscale materialPath={materialPath} texture="sss" />;
       break;
 
     case "Emissive":
-      Component = <Greyscale materialPath={materialPath} texture="emissive" />;
+      Component = <Grayscale materialPath={materialPath} texture="emissive" />;
       break;
 
     default:
