@@ -1,3 +1,4 @@
+pub mod normal;
 pub mod structs;
 use structs::{
     Defaults, DefaultsGrayscale, ExtendedGrayscale, MatYml, PngImage, TextureFile, TEXTURE_FILES,
@@ -64,6 +65,7 @@ pub fn select_texture_file(
             )
         })?;
 
+    // For mutlithreading process of data
     let mat_yml: Arc<MatYml> = Arc::new(load_mat_yml(path)?);
 
     let (temp_file_path, original_exists) = process_image(path, texture_file, mat_yml.clone())?;
@@ -98,6 +100,7 @@ fn process_image(
 ) -> Result<(String, bool), String> {
     let (img, original_exists) = match find_matching_file(path, texture_file.pattern) {
         Some(file) => {
+            // Using the `png` crate to read the image. So much faster compared to `image` crate.
             let decoder = png::Decoder::new(File::open(file.path()).unwrap());
             let mut reader = decoder.read_info().unwrap();
             let mut buf = vec![0; reader.output_buffer_size()];
@@ -147,6 +150,7 @@ fn load_mat_yml(path: &Path) -> Result<MatYml, String> {
     result
 }
 
+// Create a plain 16x16 image with the filled default colour
 fn create_default_image(texture_file: &TextureFile) -> PngImage {
     let def = texture_file.defaults.clone();
     let color = def.default_color.unwrap_or([0, 0, 0]);
@@ -183,6 +187,7 @@ fn process_grayscale_image(
 ) -> PngImage {
     let info = img.info.clone();
 
+    // Convert the image to grayscale
     let luma_img = if info.color_type != png::ColorType::Grayscale {
         img.buf
             .chunks(4)
@@ -195,13 +200,15 @@ fn process_grayscale_image(
         img.buf.to_vec()
     };
 
+    // Textures sharing the same properties, so the processing will be the same
     if [
         "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
     ]
     .contains(&texture_file.name)
     {
         if let Some(texture) = get_texture_properties(&texture_file.name, mat_yml) {
-            let processed = process_pixels_parallel(&luma_img, info.width, info.height, &texture);
+            let processed =
+                process_pixels_grayscale_common(&luma_img, info.width, info.height, &texture);
 
             return PngImage {
                 buf: processed,
@@ -218,7 +225,7 @@ fn process_grayscale_image(
     }
 }
 
-fn process_pixels_parallel(
+fn process_pixels_grayscale_common(
     img: &[u8],
     width: usize,
     height: usize,
@@ -227,8 +234,6 @@ fn process_pixels_parallel(
     let value = texture.value.unwrap_or(0.0);
     let shift = texture.shift.unwrap_or(0.0);
     let scale = texture.scale.unwrap_or(1.0);
-
-    println!("\t\t\t\t\t\t{value}\t{shift}\t{scale}");
 
     let pixels: Arc<[u8]> = Arc::from(img);
     let chunk_size = (width * height / rayon::current_num_threads()).max(1);
@@ -240,6 +245,7 @@ fn process_pixels_parallel(
                 .iter()
                 .map(|&pixel| {
                     if value > 0.0 {
+                        // No need to modify the pixels if there is a value present since it overwrites the image
                         value.clamp(0.0, 255.0) as u8
                     } else {
                         let current_value = pixel as f32 / 255.0;
@@ -255,6 +261,7 @@ fn process_pixels_parallel(
 }
 
 fn find_matching_file(path: &Path, pattern: &str) -> Option<fs::DirEntry> {
+    // Filter all the files/paths in the specified dir and returns false or the path to file
     fs::read_dir(path)
         .ok()?
         .filter_map(Result::ok)
