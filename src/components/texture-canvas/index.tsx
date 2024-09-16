@@ -8,11 +8,14 @@ import {
   BufferGeometry,
   Color,
   NearestFilter,
+  RepeatWrapping,
   TextureLoader,
 } from "three";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 
 export function TextureCanvas() {
-  const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
+  const [selectedTexture, setSelectedTexture] = useState<string | null>();
 
   useEffect(() => {
     const unlisten = listen<string>("selected-texture-file", (e) => {
@@ -26,9 +29,36 @@ export function TextureCanvas() {
 
   if (!selectedTexture) return null;
 
+  return <Renderer selectedTexture={selectedTexture} />;
+}
+
+const Renderer = ({ selectedTexture }: { selectedTexture: string }) => {
+  const [isTiled, setIsTiled] = useState(false);
+  const [grid, setGrid] = useState(false);
+
   const texture = useLoader(TextureLoader, selectedTexture);
   texture.minFilter = NearestFilter;
   texture.magFilter = NearestFilter;
+
+  // if (isTiled) {
+  //   texture.wrapS = RepeatWrapping;
+  //   texture.wrapT = RepeatWrapping;
+  //   texture.repeat.set(3, 3);
+  // } else {
+  //   texture.repeat.set(1, 1);
+  // }
+  useEffect(() => {
+    if (isTiled) {
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
+      texture.repeat.set(3, 3);
+    } else {
+      // @ts-ignore
+      texture.wrapS = texture.wrapT = undefined;
+      texture.repeat.set(1, 1);
+    }
+    texture.needsUpdate = true;
+  }, [isTiled, texture]);
 
   let planeWidth = 1;
   let planeHeight = 1;
@@ -46,21 +76,67 @@ export function TextureCanvas() {
         : (1 / aspectRatio) * (texture.image.height / 128);
   }
 
+  const toggleTiling = () => setIsTiled(!isTiled);
+  const toggleGrid = () => setGrid(!grid);
+
+  useKeyboardShortcut({
+    key: "t",
+    handler: toggleTiling,
+  });
+  useKeyboardShortcut({
+    key: "g",
+    handler: toggleGrid,
+  });
+
   return (
-    <CanvasWrapper>
-      <mesh>
-        <planeGeometry args={[planeWidth, planeHeight]} />
-        <meshBasicMaterial map={texture} toneMapped={false} />
-      </mesh>
-      {/* <GridOverlay */}
-      {/*   width={planeWidth} */}
-      {/*   height={planeHeight} */}
-      {/*   resolutionX={texture.image.width} */}
-      {/*   resolutionY={texture.image.height} */}
-      {/* /> */}
-    </CanvasWrapper>
+    <>
+      <div className="flex w-full gap-4 border-b bg-background/10 p-2.5">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="tile"
+            checked={isTiled}
+            onCheckedChange={toggleTiling}
+          />
+          <label
+            htmlFor="tile"
+            className="text-sm font-bold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Tile
+          </label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox id="grid" checked={grid} onCheckedChange={toggleGrid} />
+          <label
+            htmlFor="grid"
+            className="text-sm font-bold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Grid
+          </label>
+        </div>
+      </div>
+      <CanvasWrapper>
+        <mesh>
+          <planeGeometry
+            args={[
+              planeWidth * (isTiled ? 3 : 1),
+              planeHeight * (isTiled ? 3 : 1),
+            ]}
+          />
+          <meshBasicMaterial map={texture} toneMapped={false} />
+        </mesh>
+
+        {grid && (
+          <GridOverlay
+            width={planeWidth * (isTiled ? 3 : 1)}
+            height={planeHeight * (isTiled ? 3 : 1)}
+            resolutionX={texture.image.width * (isTiled ? 3 : 1)}
+            resolutionY={texture.image.height * (isTiled ? 3 : 1)}
+          />
+        )}
+      </CanvasWrapper>
+    </>
   );
-}
+};
 
 const CameraController = () => {
   const { camera, gl } = useThree();

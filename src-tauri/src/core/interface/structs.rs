@@ -27,12 +27,6 @@ pub struct Normal {
     pub curve_y: Option<usize>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-pub struct ExtendedGrayscale {
-    pub use_og: bool,
-    pub values: DefaultsGrayscale,
-}
-
 pub struct TextureFile {
     pub name: &'static str,
     pub pattern: &'static str,

@@ -1,8 +1,6 @@
 pub mod normal;
 pub mod structs;
-use structs::{
-    Defaults, DefaultsGrayscale, ExtendedGrayscale, MatYml, PngImage, TextureFile, TEXTURE_FILES,
-};
+use structs::{Defaults, DefaultsGrayscale, MatYml, PngImage, TextureFile, TEXTURE_FILES};
 
 use base64::{engine::general_purpose, Engine};
 use rayon::prelude::*;
@@ -68,23 +66,20 @@ pub fn select_texture_file(
     // For mutlithreading process of data
     let mat_yml: Arc<MatYml> = Arc::new(load_mat_yml(path)?);
 
-    let (temp_file_path, original_exists) = process_image(path, texture_file, mat_yml.clone())?;
+    let img_path = process_image(path, texture_file, mat_yml.clone())?;
 
-    app.emit("selected-texture-file", temp_file_path.clone())
+    app.emit("selected-texture-file", img_path.clone())
         .map_err(|e| format!("Failed to emit event: {}", e))?;
 
     let texture_properties = get_texture_properties(&texture_file.name, &mat_yml);
 
-    let extended_res = ExtendedGrayscale {
-        use_og: original_exists,
-        values: texture_properties.unwrap_or(DefaultsGrayscale {
-            value: Some(0.0),
-            shift: Some(0.0),
-            scale: Some(1.0),
-        }),
-    };
+    let res = texture_properties.unwrap_or(DefaultsGrayscale {
+        value: Some(0.0),
+        shift: Some(0.0),
+        scale: Some(1.0),
+    });
 
-    let result = serde_json::to_string(&extended_res).map_err(|e| {
+    let result = serde_json::to_string(&res).map_err(|e| {
         let err = format!("Failed to serialize extended grayscale: {}", e);
         eprintln!("{}", err);
         err
@@ -97,8 +92,8 @@ fn process_image(
     path: &Path,
     texture_file: &TextureFile,
     mat_yml: Arc<MatYml>,
-) -> Result<(String, bool), String> {
-    let (img, original_exists) = match find_matching_file(path, texture_file.pattern) {
+) -> Result<String, String> {
+    let img = match find_matching_file(path, texture_file.pattern) {
         Some(file) => {
             // Using the `png` crate to read the image. So much faster compared to `image` crate.
             let decoder = png::Decoder::new(File::open(file.path()).unwrap());
@@ -118,9 +113,9 @@ fn process_image(
                 palette: Some(reader.info().palette.clone()).expect("msg"),
             };
 
-            (img, true)
+            img
         }
-        None => (create_default_image(texture_file), true),
+        None => create_default_image(texture_file),
     };
 
     let processed_img = if texture_file.grayscale {
@@ -131,7 +126,7 @@ fn process_image(
 
     let base64_image = image_to_base64(&processed_img)?;
 
-    Ok((base64_image, original_exists))
+    Ok(base64_image)
 }
 
 fn load_mat_yml(path: &Path) -> Result<MatYml, String> {

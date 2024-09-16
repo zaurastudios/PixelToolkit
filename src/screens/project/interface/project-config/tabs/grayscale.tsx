@@ -27,7 +27,6 @@ export function Grayscale({
 
   const [values, setValues] =
     useState<AddAdditionalType<DefaultsGrayscale, string>>(defaultValues);
-  const [disabled, setDisabled] = useState(false);
 
   function toString(o: Object) {
     return Object.fromEntries(
@@ -93,12 +92,10 @@ export function Grayscale({
         materialPath,
         texture,
       });
-      const parsedRes: { use_og: boolean; values: DefaultsGrayscale } | string =
-        await JSON.parse(res);
+      const parsedRes: DefaultsGrayscale | string = await JSON.parse(res);
       if (typeof parsedRes === "string") throw new Error(parsedRes);
 
-      setValues(parsedRes.values);
-      setDisabled(!parsedRes.use_og);
+      setValues(parsedRes);
     } catch (err) {
       console.error(err);
       toast(String(err));
@@ -108,7 +105,6 @@ export function Grayscale({
 
   useEffect(() => {
     setValues(defaultValues);
-    setDisabled(false);
     init();
   }, [materialPath, textureOpt]);
   return (
@@ -127,7 +123,6 @@ export function Grayscale({
           onChange={(e) => {
             setValues((prev) => ({ ...prev, value: e.target.value }));
           }}
-          disabled={disabled}
         />
       </div>
       <div className="grid grid-cols-2 items-center justify-center px-2">
@@ -143,7 +138,6 @@ export function Grayscale({
           onChange={(e) => {
             setValues((prev) => ({ ...prev, shift: e.target.value }));
           }}
-          disabled={disabled}
         />
       </div>
       <div className="grid grid-cols-2 items-center justify-center px-2">
@@ -162,7 +156,6 @@ export function Grayscale({
               scale: e.target.value,
             }));
           }}
-          disabled={disabled}
         />
       </div>
     </form>
