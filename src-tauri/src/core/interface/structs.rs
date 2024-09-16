@@ -62,7 +62,7 @@ pub const TEXTURE_FILES: [TextureFile; 13] = [
             color_type: png::ColorType::Grayscale,
             width: 16,
             height: 16,
-            default_color: Some([0, 0, 0]),
+            default_color: Some([255, 255, 255]),
         },
     },
     TextureFile {
@@ -122,7 +122,7 @@ pub const TEXTURE_FILES: [TextureFile; 13] = [
             color_type: png::ColorType::Grayscale,
             width: 16,
             height: 16,
-            default_color: Some([0, 0, 0]),
+            default_color: Some([255, 255, 255]),
         },
     },
     TextureFile {
@@ -158,7 +158,7 @@ pub const TEXTURE_FILES: [TextureFile; 13] = [
             color_type: png::ColorType::Grayscale,
             width: 16,
             height: 16,
-            default_color: Some([0, 0, 0]),
+            default_color: Some([10, 10, 10]),
         },
     },
     TextureFile {
