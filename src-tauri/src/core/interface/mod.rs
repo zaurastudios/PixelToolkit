@@ -11,7 +11,6 @@ use std::{
     io::Cursor,
     path::Path,
     sync::Arc,
-    time::Instant,
 };
 
 use tauri::Emitter;
@@ -50,8 +49,6 @@ pub fn select_texture_file(
     texture: String,
     app: tauri::AppHandle,
 ) -> Result<String, String> {
-    let start_time = Instant::now();
-
     let path = Path::new(&material_path);
     if !path.exists() {
         return Err(String::from("Selected path does not exist."));
@@ -67,25 +64,14 @@ pub fn select_texture_file(
             )
         })?;
 
-    let mat_yml_load_start = Instant::now();
     let mat_yml: Arc<MatYml> = Arc::new(load_mat_yml(path)?);
-    println!("Loading mat.yml took: {:?}", mat_yml_load_start.elapsed());
 
-    let process_image_start = Instant::now();
     let (temp_file_path, original_exists) = process_image(path, texture_file, mat_yml.clone())?;
-    println!("Processing image took: {:?}", process_image_start.elapsed());
 
-    let emit_start = Instant::now();
     app.emit("selected-texture-file", temp_file_path.clone())
         .map_err(|e| format!("Failed to emit event: {}", e))?;
-    println!("Emitting event took: {:?}", emit_start.elapsed());
 
-    let get_properties_start = Instant::now();
     let texture_properties = get_texture_properties(&texture_file.name, &mat_yml);
-    println!(
-        "Getting texture properties took: {:?}",
-        get_properties_start.elapsed()
-    );
 
     let extended_res = ExtendedGrayscale {
         use_og: original_exists,
@@ -96,18 +82,11 @@ pub fn select_texture_file(
         }),
     };
 
-    let serialize_start = Instant::now();
     let result = serde_json::to_string(&extended_res).map_err(|e| {
         let err = format!("Failed to serialize extended grayscale: {}", e);
         eprintln!("{}", err);
         err
     });
-    println!("Serializing result took: {:?}", serialize_start.elapsed());
-
-    println!(
-        "Total time for select_texture_file: {:?}\n\n",
-        start_time.elapsed()
-    );
 
     result
 }
@@ -117,19 +96,12 @@ fn process_image(
     texture_file: &TextureFile,
     mat_yml: Arc<MatYml>,
 ) -> Result<(String, bool), String> {
-    let start_time = Instant::now();
-
-    let find_file_start = Instant::now();
     let (img, original_exists) = match find_matching_file(path, texture_file.pattern) {
         Some(file) => {
-            let open_start = Instant::now();
-
             let decoder = png::Decoder::new(File::open(file.path()).unwrap());
             let mut reader = decoder.read_info().unwrap();
             let mut buf = vec![0; reader.output_buffer_size()];
             let info = reader.next_frame(&mut buf).unwrap();
-
-            println!("Opening image took: {:?}", open_start.elapsed());
 
             let img = PngImage {
                 buf,
@@ -147,59 +119,35 @@ fn process_image(
         }
         None => (create_default_image(texture_file), true),
     };
-    println!(
-        "Finding and opening file took: {:?}",
-        find_file_start.elapsed()
-    );
 
-    let process_start = Instant::now();
     let processed_img = if texture_file.grayscale {
         process_grayscale_image(&img, texture_file, &mat_yml)
     } else {
         img
     };
-    println!("Processing image took: {:?}", process_start.elapsed());
 
-    let base64_start = Instant::now();
     let base64_image = image_to_base64(&processed_img)?;
-    println!(
-        "Converting image to base64 took: {:?}",
-        base64_start.elapsed()
-    );
-
-    // let temp_file_path = save_image_to_temp_dir(path, &texture_file.name, &processed_img)?;
-
-    println!("Total time for process_image: {:?}", start_time.elapsed());
 
     Ok((base64_image, original_exists))
 }
 
 fn load_mat_yml(path: &Path) -> Result<MatYml, String> {
-    let start_time = Instant::now();
     let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
         let err = format!("Failed to read mat.yml file: {}", e);
         eprintln!("{}", err);
         err
     })?;
-    println!("Reading mat.yml file took: {:?}", start_time.elapsed());
 
-    let deserialize_start = Instant::now();
     let result = serde_yaml::from_str(&mat_yml_str).map_err(|e| {
         let err = format!("Failed to deserialise mat.yml file: {}", e);
         eprintln!("{}", err);
         err
     });
-    println!(
-        "Deserializing mat.yml took: {:?}",
-        deserialize_start.elapsed()
-    );
 
     result
 }
 
 fn create_default_image(texture_file: &TextureFile) -> PngImage {
-    let start_time = Instant::now();
-
     let def = texture_file.defaults.clone();
     let color = def.default_color.unwrap_or([0, 0, 0]);
 
@@ -221,8 +169,6 @@ fn create_default_image(texture_file: &TextureFile) -> PngImage {
         }
     }
 
-    println!("Creating default image took: {:?}", start_time.elapsed());
-
     PngImage {
         buf,
         info: def,
@@ -235,11 +181,7 @@ fn process_grayscale_image(
     texture_file: &TextureFile,
     mat_yml: &MatYml,
 ) -> PngImage {
-    let start_time = Instant::now();
-
     let info = img.info.clone();
-
-    let to_luma_start = Instant::now();
 
     let luma_img = if info.color_type != png::ColorType::Grayscale {
         img.buf
@@ -252,7 +194,6 @@ fn process_grayscale_image(
     } else {
         img.buf.to_vec()
     };
-    println!("Converting to luma took: {:?}", to_luma_start.elapsed());
 
     if [
         "opacity", "smooth", "rough", "porosity", "metal", "f0", "sss", "emissive",
@@ -260,17 +201,7 @@ fn process_grayscale_image(
     .contains(&texture_file.name)
     {
         if let Some(texture) = get_texture_properties(&texture_file.name, mat_yml) {
-            let process_pixels_start = Instant::now();
             let processed = process_pixels_parallel(&luma_img, info.width, info.height, &texture);
-            println!(
-                "Processing pixels took: {:?}",
-                process_pixels_start.elapsed()
-            );
-
-            println!(
-                "Total time for process_grayscale_image: {:?}",
-                start_time.elapsed()
-            );
 
             return PngImage {
                 buf: processed,
@@ -279,11 +210,6 @@ fn process_grayscale_image(
             };
         }
     }
-
-    println!(
-        "Total time for process_grayscale_image: {:?}",
-        start_time.elapsed()
-    );
 
     PngImage {
         buf: img.buf.clone(),
@@ -298,8 +224,6 @@ fn process_pixels_parallel(
     height: usize,
     texture: &DefaultsGrayscale,
 ) -> Vec<u8> {
-    let start_time = Instant::now();
-
     let value = texture.value.unwrap_or(0.0);
     let shift = texture.shift.unwrap_or(0.0);
     let scale = texture.scale.unwrap_or(1.0);
@@ -309,7 +233,6 @@ fn process_pixels_parallel(
     let pixels: Arc<[u8]> = Arc::from(img);
     let chunk_size = (width * height / rayon::current_num_threads()).max(1);
 
-    let process_start = Instant::now();
     let processed: Vec<u8> = pixels
         .par_chunks(chunk_size as usize)
         .flat_map(|chunk| {
@@ -327,15 +250,7 @@ fn process_pixels_parallel(
                 .collect::<Vec<u8>>()
         })
         .collect();
-    println!(
-        "Parallel processing of pixels took: {:?}",
-        process_start.elapsed()
-    );
 
-    println!(
-        "Total time for process_pixels_parallel: {:?}",
-        start_time.elapsed()
-    );
     processed
 }
 
@@ -351,7 +266,6 @@ fn find_matching_file(path: &Path, pattern: &str) -> Option<fs::DirEntry> {
 }
 
 fn get_texture_properties(texture_name: &str, mat_yml: &MatYml) -> Option<DefaultsGrayscale> {
-    let start_time = Instant::now();
     let result = match texture_name {
         "opacity" => mat_yml.opacity.clone(),
         "rough" => mat_yml.rough.clone(),
@@ -363,10 +277,7 @@ fn get_texture_properties(texture_name: &str, mat_yml: &MatYml) -> Option<Defaul
         "emissive" => mat_yml.emissive.clone(),
         _ => None,
     };
-    println!(
-        "Getting texture properties took: {:?}",
-        start_time.elapsed()
-    );
+
     result
 }
 
@@ -378,8 +289,6 @@ pub fn update_defaults_grayscale(
     shift: String,
     scale: String,
 ) -> Result<bool, String> {
-    let start_time = Instant::now();
-
     let path = Path::new(&material_path);
     if !path.exists() {
         return Err(String::from("Selected path does not exist."));
@@ -425,11 +334,6 @@ pub fn update_defaults_grayscale(
     })?;
 
     fs::write(&path.join("mat.yml"), updated_mat_yml).map_err(|e| e.to_string())?;
-
-    println!(
-        "Total time for update_defaults_grayscale: {:?}",
-        start_time.elapsed()
-    );
 
     Ok(true)
 }
