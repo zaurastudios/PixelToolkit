@@ -45,7 +45,9 @@ export function Grayscale({
       const parsedRes: string | boolean = await JSON.parse(String(res));
       if (typeof parsedRes === "string") throw new Error(parsedRes);
 
-      if (parsedRes) init();
+      if (parsedRes) {
+        init();
+      }
     } catch (err) {
       console.error(err);
       toast(String(err));
@@ -94,10 +96,9 @@ export function Grayscale({
       const parsedRes: { use_og: boolean; values: DefaultsGrayscale } | string =
         await JSON.parse(res);
       if (typeof parsedRes === "string") throw new Error(parsedRes);
-      console.log(parsedRes);
 
       setValues(parsedRes.values);
-      // setDisabled(parsedRes.use_og);
+      setDisabled(!parsedRes.use_og);
     } catch (err) {
       console.error(err);
       toast(String(err));

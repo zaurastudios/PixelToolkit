@@ -1,6 +1,7 @@
 import { useKeyboardShortcut } from "@/lib/use-keyboard-shortcut";
 import { OrbitControls, OrbitControlsProps, Stats } from "@react-three/drei";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -10,25 +11,24 @@ import {
   NearestFilter,
   TextureLoader,
 } from "three";
+import { generateUUID } from "three/src/math/MathUtils.js";
 
 export function TextureCanvas() {
-  const [selectedTexture, setSelectedTexture] = useState<string | null>();
+  const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
 
   useEffect(() => {
-    const unlisten = listen<string>("selected-texture-file", (e) =>
-      setSelectedTexture(e.payload),
-    );
+    const unlisten = listen<string>("selected-texture-file", (e) => {
+      setSelectedTexture(convertFileSrc(e.payload) + "?" + generateUUID());
+    });
+
     return () => {
-      unlisten.then((f) => f());
+      unlisten.then((unlistenFn) => unlistenFn());
     };
   }, []);
 
   if (!selectedTexture) return null;
 
-  const texture = useLoader(
-    TextureLoader,
-    `data:image/png;base64,${selectedTexture}`,
-  );
+  const texture = useLoader(TextureLoader, selectedTexture);
   texture.minFilter = NearestFilter;
   texture.magFilter = NearestFilter;
 
@@ -37,8 +37,15 @@ export function TextureCanvas() {
 
   if (selectedTexture) {
     const aspectRatio = texture.image.width / texture.image.height;
-    planeWidth = aspectRatio > 1 ? aspectRatio : 1;
-    planeHeight = aspectRatio > 1 ? 1 : 1 / aspectRatio;
+
+    planeWidth =
+      aspectRatio > 1
+        ? aspectRatio * (texture.image.width / 128)
+        : texture.image.width / 128;
+    planeHeight =
+      aspectRatio > 1
+        ? texture.image.height / 128
+        : (1 / aspectRatio) * (texture.image.height / 128);
   }
 
   return (
@@ -70,7 +77,7 @@ const CameraController = () => {
   }, []);
 
   const resetCamera = () => {
-    camera.position.set(0, 1.8369701987210297e-16, 0);
+    camera.position.set(0, 6.8369701987210297e-16, 0);
     camera.lookAt(0, 0, 0);
     // @ts-ignore
     controlsRef.current.reset();
@@ -89,7 +96,7 @@ const CameraController = () => {
         args={[camera, gl.domElement]}
         enableRotate={false}
         minDistance={0.1}
-        maxDistance={3}
+        maxDistance={10}
       />
     </>
   );
