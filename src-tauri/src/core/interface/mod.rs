@@ -1,16 +1,19 @@
 pub mod structs;
+use structs::{
+    Defaults, DefaultsGrayscale, ExtendedGrayscale, MatYml, PngImage, TextureFile, TEXTURE_FILES,
+};
+
+use base64::{engine::general_purpose, Engine};
 use rayon::prelude::*;
 
 use std::{
-    borrow::Cow,
     fs::{self, File},
-    io::BufWriter,
+    io::Cursor,
     path::Path,
     sync::Arc,
     time::Instant,
 };
 
-use structs::{Defaults, DefaultsGrayscale, ExtendedGrayscale, MatYml, TextureFile, TEXTURE_FILES};
 use tauri::Emitter;
 
 #[tauri::command]
@@ -157,11 +160,18 @@ fn process_image(
     };
     println!("Processing image took: {:?}", process_start.elapsed());
 
-    let temp_file_path = save_image_to_temp_dir(path, &texture_file.name, &processed_img)?;
+    let base64_start = Instant::now();
+    let base64_image = image_to_base64(&processed_img)?;
+    println!(
+        "Converting image to base64 took: {:?}",
+        base64_start.elapsed()
+    );
+
+    // let temp_file_path = save_image_to_temp_dir(path, &texture_file.name, &processed_img)?;
 
     println!("Total time for process_image: {:?}", start_time.elapsed());
 
-    Ok((temp_file_path, original_exists))
+    Ok((base64_image, original_exists))
 }
 
 fn load_mat_yml(path: &Path) -> Result<MatYml, String> {
@@ -360,39 +370,6 @@ fn get_texture_properties(texture_name: &str, mat_yml: &MatYml) -> Option<Defaul
     result
 }
 
-fn save_image_to_temp_dir(
-    material_path: &Path,
-    texture_name: &str,
-    img: &PngImage,
-) -> Result<String, String> {
-    let start_time = Instant::now();
-
-    let temp_dir = material_path.join("ptk_temp");
-    fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create temp directory: {}", e))?;
-
-    let temp_file_path = temp_dir.join(&format!("{}.png", texture_name));
-    let file = File::create(&temp_file_path).map_err(|e| e.to_string())?;
-    let ref mut w = BufWriter::new(file);
-
-    let info = &img.info;
-
-    let mut encoder = png::Encoder::new(w, info.width as u32, info.height as u32);
-    encoder.set_color(info.color_type);
-    encoder.set_depth(info.bit_depth);
-    let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
-
-    writer
-        .write_image_data(&img.buf)
-        .map_err(|e| e.to_string())?;
-
-    println!(
-        "Saving image to temp directory took: {:?}",
-        start_time.elapsed()
-    );
-
-    Ok(temp_file_path.to_string_lossy().to_string())
-}
-
 #[tauri::command]
 pub fn update_defaults_grayscale(
     material_path: String,
@@ -457,8 +434,24 @@ pub fn update_defaults_grayscale(
     Ok(true)
 }
 
-struct PngImage {
-    buf: Vec<u8>,
-    info: Defaults,
-    palette: Option<Cow<'static, [u8]>>,
+fn image_to_base64(img: &PngImage) -> Result<String, String> {
+    let mut png_data = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(
+            Cursor::new(&mut png_data),
+            img.info.width as u32,
+            img.info.height as u32,
+        );
+        encoder.set_color(img.info.color_type);
+        encoder.set_depth(img.info.bit_depth);
+        if let Some(ref palette) = img.palette {
+            encoder.set_palette(palette.clone());
+        }
+        let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
+        writer
+            .write_image_data(&img.buf)
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(general_purpose::STANDARD.encode(&png_data))
 }

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct MatYml {
     // pub color: Option<DefaultsGrayscale>,
@@ -204,4 +206,10 @@ pub struct Defaults {
     pub width: usize,
     pub height: usize,
     pub default_color: Option<[u8; 3]>,
+}
+
+pub struct PngImage {
+    pub buf: Vec<u8>,
+    pub info: Defaults,
+    pub palette: Option<Cow<'static, [u8]>>,
 }

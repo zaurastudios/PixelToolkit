@@ -1,7 +1,6 @@
 import { useKeyboardShortcut } from "@/lib/use-keyboard-shortcut";
 import { OrbitControls, OrbitControlsProps, Stats } from "@react-three/drei";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -11,14 +10,13 @@ import {
   NearestFilter,
   TextureLoader,
 } from "three";
-import { generateUUID } from "three/src/math/MathUtils.js";
 
 export function TextureCanvas() {
   const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
 
   useEffect(() => {
     const unlisten = listen<string>("selected-texture-file", (e) => {
-      setSelectedTexture(convertFileSrc(e.payload) + "?" + generateUUID());
+      setSelectedTexture(`data:image/png;base64,${e.payload}`);
     });
 
     return () => {
