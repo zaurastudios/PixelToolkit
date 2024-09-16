@@ -74,7 +74,6 @@ export function Grayscale({
 
       setValues((prev) => {
         const newValues = { ...prev, [name]: parsedValue };
-        updateDefaults();
         return newValues;
       });
     } catch (err) {
@@ -85,6 +84,7 @@ export function Grayscale({
         [name]: defaultValue,
       }));
     }
+    updateDefaults();
   }
 
   async function init() {
