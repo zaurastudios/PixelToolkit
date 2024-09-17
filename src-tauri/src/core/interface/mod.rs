@@ -11,6 +11,7 @@ use std::{
     io::Cursor,
     path::Path,
     sync::Arc,
+    time::Instant,
 };
 
 use tauri::Emitter;
@@ -67,9 +68,11 @@ pub fn select_texture_file(
     // For mutlithreading process of data
     let mat_yml: Arc<MatYml> = Arc::new(load_mat_yml(path)?);
 
-    let img_path = process_image(path, texture_file, mat_yml.clone())?;
+    let normal_time = Instant::now();
+    let base64_img = process_image(path, texture_file, mat_yml.clone())?;
+    println!("Time taken: {:?}", normal_time.elapsed());
 
-    app.emit("selected-texture-file", img_path.clone())
+    app.emit("selected-texture-file", base64_img.clone())
         .map_err(|e| format!("Failed to emit event: {}", e))?;
 
     let texture_properties = get_texture_properties(&texture_file.name, &mat_yml);
@@ -104,7 +107,7 @@ fn process_image(
         process_grayscale_image(&img, texture_file, &mat_yml)
     } else if texture_file.name == "normal" && is_default {
         match find_matching_file(path, r".*(?i)height.*\.png$") {
-            Some(file) => generate_normal_map(file.path().to_string_lossy().to_string()),
+            Some(file) => generate_normal_map(&file.path()),
             None => img,
         }
     } else {
@@ -113,6 +116,10 @@ fn process_image(
 
     image_to_base64(&processed_img)
 }
+
+// fn process_normal_map(file_path: &Path) -> Result<PngImage, String> {
+//     Ok((img))
+// }
 
 fn read_png_file(file_path: &Path) -> Result<PngImage, String> {
     let file = File::open(file_path).map_err(|e| e.to_string())?;

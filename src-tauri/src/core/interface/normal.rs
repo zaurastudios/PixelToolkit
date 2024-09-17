@@ -1,5 +1,7 @@
+use std::path::Path;
+
 use super::structs::PngImage;
-use crate::core::interface::structs::Defaults;
+use crate::core::{interface::structs::Defaults, normal_map};
 
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 
@@ -8,7 +10,7 @@ use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 //     [[-1, -2, -1], [0, 0, 0], [1, 2, 1]], // Sobel Y
 // ];
 
-pub fn generate_normal_map(path: String) -> PngImage {
+pub fn generate_normal_map(path: &Path) -> PngImage {
     let img = image::open(path).unwrap();
     let (width, height) = img.dimensions();
 
@@ -27,7 +29,7 @@ pub fn generate_normal_map(path: String) -> PngImage {
         }
     }
 
-    let tiled_normal_map = normal_heights::map_normals(&DynamicImage::ImageRgba8(tiled_img));
+    let tiled_normal_map = normal_map::map_normals(&DynamicImage::ImageRgba8(tiled_img));
     let tiled_normal_map_buf = tiled_normal_map.into_raw();
 
     // Extract the middle tile
