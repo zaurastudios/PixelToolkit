@@ -1,5 +1,6 @@
 pub mod normal;
 pub mod structs;
+use normal::generate_normal_map;
 use structs::{Defaults, DefaultsGrayscale, MatYml, PngImage, TextureFile, TEXTURE_FILES};
 
 use base64::{engine::general_purpose, Engine};
@@ -93,40 +94,44 @@ fn process_image(
     texture_file: &TextureFile,
     mat_yml: Arc<MatYml>,
 ) -> Result<String, String> {
-    let img = match find_matching_file(path, texture_file.pattern) {
-        Some(file) => {
-            // Using the `png` crate to read the image. So much faster compared to `image` crate.
-            let decoder = png::Decoder::new(File::open(file.path()).unwrap());
-            let mut reader = decoder.read_info().unwrap();
-            let mut buf = vec![0; reader.output_buffer_size()];
-            let info = reader.next_frame(&mut buf).unwrap();
-
-            let img = PngImage {
-                buf,
-                info: Defaults {
-                    bit_depth: info.bit_depth,
-                    color_type: info.color_type,
-                    width: info.width as usize,
-                    height: info.height as usize,
-                    default_color: None,
-                },
-                palette: Some(reader.info().palette.clone()).expect("msg"),
-            };
-
-            img
-        }
-        None => create_default_image(texture_file),
+    let matching_file = find_matching_file(path, &texture_file.pattern);
+    let (img, is_default) = match &matching_file {
+        Some(file) => (read_png_file(&file.path())?, false),
+        None => (create_default_image(texture_file), true),
     };
 
     let processed_img = if texture_file.grayscale {
         process_grayscale_image(&img, texture_file, &mat_yml)
+    } else if texture_file.name == "normal" && is_default {
+        match find_matching_file(path, r".*(?i)height.*\.png$") {
+            Some(file) => generate_normal_map(file.path().to_string_lossy().to_string()),
+            None => img,
+        }
     } else {
         img
     };
 
-    let base64_image = image_to_base64(&processed_img)?;
+    image_to_base64(&processed_img)
+}
 
-    Ok(base64_image)
+fn read_png_file(file_path: &Path) -> Result<PngImage, String> {
+    let file = File::open(file_path).map_err(|e| e.to_string())?;
+    let decoder = png::Decoder::new(file);
+    let mut reader = decoder.read_info().map_err(|e| e.to_string())?;
+    let mut buf = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut buf).map_err(|e| e.to_string())?;
+
+    Ok(PngImage {
+        buf,
+        info: Defaults {
+            bit_depth: info.bit_depth,
+            color_type: info.color_type,
+            width: info.width as usize,
+            height: info.height as usize,
+            default_color: None,
+        },
+        palette: reader.info().palette.clone(),
+    })
 }
 
 fn load_mat_yml(path: &Path) -> Result<MatYml, String> {

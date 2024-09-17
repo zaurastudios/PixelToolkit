@@ -202,6 +202,7 @@ pub struct Defaults {
     pub default_color: Option<[u8; 3]>,
 }
 
+#[derive(Clone)]
 pub struct PngImage {
     pub buf: Vec<u8>,
     pub info: Defaults,
