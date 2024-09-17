@@ -108,7 +108,7 @@ export function Grayscale({
     init();
   }, [materialPath, textureOpt]);
   return (
-    <form className="flex flex-col gap-2 font-mono">
+    <div className="flex flex-col gap-2 font-mono">
       <div className="grid grid-cols-2 items-center justify-center px-2">
         <Label className="text-center">Value</Label>
         <Input
@@ -158,6 +158,6 @@ export function Grayscale({
           }}
         />
       </div>
-    </form>
+    </div>
   );
 }

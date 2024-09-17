@@ -39,7 +39,12 @@ export function DefaultTab({
       break;
 
     case "Normal":
-      Component = <Normal materialPath={materialPath} />;
+      Component = (
+        <Normal
+          materialPath={materialPath}
+          textureFileOption={textureFileOption}
+        />
+      );
       break;
 
     case "Smoothness":

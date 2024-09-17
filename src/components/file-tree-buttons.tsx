@@ -53,6 +53,7 @@ export const FileTreeFolder: React.FC<{
     ): FlattenedEntry[] => {
       nodes.forEach((node) => {
         const currentPath = `${path}/${node.name}`;
+        // const isExpanded = expandedNodes.includes(currentPath);
         const isExpanded = true;
 
         result.push({
@@ -188,7 +189,15 @@ const EntryRow: React.FC<EntryRowProps> = React.memo(
                   }`}
                 />
               )}
-              <span>{entry.name}</span>
+              <span
+                className={
+                  entry.isExpanded || pathToEntry === selectedMaterial
+                    ? "font-medium"
+                    : "font-normal"
+                }
+              >
+                {entry.name}
+              </span>
             </Button>
           </ContextMenuTrigger>
           <ContextMenuContent>
