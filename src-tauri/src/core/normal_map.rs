@@ -2,91 +2,163 @@
 
 use image::{DynamicImage, GrayImage, RgbImage};
 
-// Why 6.0? Because that was the whole number that gave the closest results to
-// the topographic map and normal map I was using as reference material.
-// Considering my primary intent for creating this library is to create
-// alternatives to those two files to use in the program they came with, it
-// seemed like a good idea to match them, at least approximately.
 pub const DEFAULT_STRENGTH: f32 = 1.0;
 
+#[derive(Clone, Copy)]
+pub enum KernelSize {
+    Three,
+    Five,
+    Nine,
+    Low,
+    High,
+}
+
 struct AdjPixels {
-    nw: f32,
-    n: f32,
-    ne: f32,
-    w: f32,
-    e: f32,
-    sw: f32,
-    s: f32,
-    se: f32,
+    pixels: Vec<Vec<f32>>,
+    size: usize,
 }
 
 impl AdjPixels {
-    /// edge pixels are duplicated when necessary
-    #[allow(clippy::many_single_char_names, clippy::absurd_extreme_comparisons)]
-    fn new(x: u32, y: u32, img: &GrayImage) -> Self {
-        let n = if y <= 0 { 0 } else { y - 1 };
-        let s = if y >= (img.height() - 1) {
-            img.height() - 1
-        } else {
-            y + 1
+    fn new(x: u32, y: u32, img: &GrayImage, kernel_size: KernelSize) -> Self {
+        let size = match kernel_size {
+            KernelSize::Three | KernelSize::Low | KernelSize::High => 3,
+            KernelSize::Five => 5,
+            KernelSize::Nine => 9,
         };
-        let w = if x <= 0 { 0 } else { x - 1 };
-        let e = if x >= (img.width() - 1) {
-            img.width() - 1
-        } else {
-            x + 1
-        };
+        let mut pixels = vec![vec![0.0; size]; size];
+        let offset = size / 2;
 
-        AdjPixels {
-            nw: fetch_pixel(n, w, img),
-            n: fetch_pixel(n, x, img),
-            ne: fetch_pixel(n, e, img),
-            w: fetch_pixel(y, w, img),
+        for dy in 0..size {
+            for dx in 0..size {
+                let px = x.saturating_add(dx as u32).saturating_sub(offset as u32);
+                let py = y.saturating_add(dy as u32).saturating_sub(offset as u32);
+                pixels[dy][dx] = fetch_pixel(px, py, img);
+            }
+        }
+        AdjPixels { pixels, size }
+    }
 
-            e: fetch_pixel(y, e, img),
-            sw: fetch_pixel(s, w, img),
-            s: fetch_pixel(s, x, img),
-            se: fetch_pixel(s, e, img),
+    fn x_normals(&self, kernel_size: KernelSize) -> f32 {
+        let kernel = self.get_x_kernel(kernel_size);
+        self.apply_kernel(&kernel)
+    }
+
+    fn y_normals(&self, kernel_size: KernelSize) -> f32 {
+        let kernel = self.get_y_kernel(kernel_size);
+        self.apply_kernel(&kernel)
+    }
+
+    fn get_x_kernel(&self, kernel_size: KernelSize) -> Vec<Vec<f32>> {
+        match kernel_size {
+            KernelSize::Three => vec![
+                vec![-1.0, 0.0, 1.0],
+                vec![-2.0, 0.0, 2.0],
+                vec![-1.0, 0.0, 1.0],
+            ],
+            KernelSize::Five => vec![
+                vec![-1.0, -2.0, 0.0, 2.0, 1.0],
+                vec![-4.0, -8.0, 0.0, 8.0, 4.0],
+                vec![-6.0, -12.0, 0.0, 12.0, 6.0],
+                vec![-4.0, -8.0, 0.0, 8.0, 4.0],
+                vec![-1.0, -2.0, 0.0, 2.0, 1.0],
+            ],
+            KernelSize::Nine => vec![
+                vec![-1.0, -2.0, -3.0, -4.0, 0.0, 4.0, 3.0, 2.0, 1.0],
+                vec![-2.0, -4.0, -6.0, -8.0, 0.0, 8.0, 6.0, 4.0, 2.0],
+                vec![-3.0, -6.0, -9.0, -12.0, 0.0, 12.0, 9.0, 6.0, 3.0],
+                vec![-4.0, -8.0, -12.0, -16.0, 0.0, 16.0, 12.0, 8.0, 4.0],
+                vec![-5.0, -10.0, -15.0, -20.0, 0.0, 20.0, 15.0, 10.0, 5.0],
+                vec![-4.0, -8.0, -12.0, -16.0, 0.0, 16.0, 12.0, 8.0, 4.0],
+                vec![-3.0, -6.0, -9.0, -12.0, 0.0, 12.0, 9.0, 6.0, 3.0],
+                vec![-2.0, -4.0, -6.0, -8.0, 0.0, 8.0, 6.0, 4.0, 2.0],
+                vec![-1.0, -2.0, -3.0, -4.0, 0.0, 4.0, 3.0, 2.0, 1.0],
+            ],
+            KernelSize::Low => vec![
+                vec![1.0, 2.0, 1.0],
+                vec![0.0, 0.0, 0.0],
+                vec![-1.0, -2.0, -1.0],
+            ],
+            KernelSize::High => vec![
+                vec![3.0, 10.0, 3.0],
+                vec![0.0, 0.0, 0.0],
+                vec![-3.0, -10.0, -3.0],
+            ],
         }
     }
 
-    /// Calculates the normals along the x-axis. Usually used for the red
-    /// channel after normalization..
-    fn x_normals(&self) -> f32 {
-        -(self.se - self.sw + 2.0 * (self.e - self.w) + self.ne - self.nw)
+    fn get_y_kernel(&self, kernel_size: KernelSize) -> Vec<Vec<f32>> {
+        match kernel_size {
+            KernelSize::Three => vec![
+                vec![-1.0, -2.0, -1.0],
+                vec![0.0, 0.0, 0.0],
+                vec![1.0, 2.0, 1.0],
+            ],
+            KernelSize::Five => vec![
+                vec![-1.0, -4.0, -6.0, -4.0, -1.0],
+                vec![-2.0, -8.0, -12.0, -8.0, -2.0],
+                vec![0.0, 0.0, 0.0, 0.0, 0.0],
+                vec![2.0, 8.0, 12.0, 8.0, 2.0],
+                vec![1.0, 4.0, 6.0, 4.0, 1.0],
+            ],
+            KernelSize::Nine => vec![
+                vec![-1.0, -2.0, -3.0, -4.0, -5.0, -4.0, -3.0, -2.0, -1.0],
+                vec![-2.0, -4.0, -6.0, -8.0, -10.0, -8.0, -6.0, -4.0, -2.0],
+                vec![-3.0, -6.0, -9.0, -12.0, -15.0, -12.0, -9.0, -6.0, -3.0],
+                vec![-4.0, -8.0, -12.0, -16.0, -20.0, -16.0, -12.0, -8.0, -4.0],
+                vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                vec![4.0, 8.0, 12.0, 16.0, 20.0, 16.0, 12.0, 8.0, 4.0],
+                vec![3.0, 6.0, 9.0, 12.0, 15.0, 12.0, 9.0, 6.0, 3.0],
+                vec![2.0, 4.0, 6.0, 8.0, 10.0, 8.0, 6.0, 4.0, 2.0],
+                vec![1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0, 1.0],
+            ],
+            KernelSize::Low => vec![
+                vec![1.0, 0.0, -1.0],
+                vec![2.0, 0.0, -2.0],
+                vec![1.0, 0.0, -1.0],
+            ],
+            KernelSize::High => vec![
+                vec![3.0, 0.0, -3.0],
+                vec![10.0, 0.0, -10.0],
+                vec![3.0, 0.0, -3.0],
+            ],
+        }
     }
 
-    /// Calculates the normals along the y-axis. Usually used for the green
-    /// channel after normalization.
-    fn y_normals(&self) -> f32 {
-        -(self.nw - self.sw + 2.0 * (self.n - self.s) + self.ne - self.se)
+    fn apply_kernel(&self, kernel: &[Vec<f32>]) -> f32 {
+        let mut sum = 0.0;
+        for y in 0..self.size {
+            for x in 0..self.size {
+                sum += self.pixels[y][x] * kernel[y][x];
+            }
+        }
+        sum
     }
 }
 
-/// Fetches the pixel at (x,y) and returns its value as an f32 scaled to between
-/// 0.0 and 1.0. Coordinate parameters are reversed from usual to better match
-///   compass directions.
-fn fetch_pixel(y: u32, x: u32, img: &GrayImage) -> f32 {
+fn fetch_pixel(x: u32, y: u32, img: &GrayImage) -> f32 {
+    let x = x.min(img.width() - 1);
+    let y = y.min(img.height() - 1);
     (img.get_pixel(x, y)[0] as f32) / 255.0
 }
 
-/// Creates the normal mapping from the given image with
-/// [DEFAULT_STRENGTH](constant.DEFAULT_STRENGTH.html)
-pub fn map_normals(img: &DynamicImage) -> RgbImage {
-    map_normals_with_strength(img, DEFAULT_STRENGTH)
+pub fn map_normals(img: &DynamicImage, kernel_size: KernelSize) -> RgbImage {
+    map_normals_with_strength(img, DEFAULT_STRENGTH, kernel_size)
 }
 
-/// Creates the normal mapping from the given image with the given strength.
-pub fn map_normals_with_strength(img: &DynamicImage, strength: f32) -> RgbImage {
+pub fn map_normals_with_strength(
+    img: &DynamicImage,
+    strength: f32,
+    kernel_size: KernelSize,
+) -> RgbImage {
     let img = img.clone().into_luma8();
     let mut normal_map = RgbImage::new(img.width(), img.height());
 
     for (x, y, p) in normal_map.enumerate_pixels_mut() {
         let mut new_p = [0.0, 0.0, 0.0];
-        let s = AdjPixels::new(x, y, &img);
+        let s = AdjPixels::new(x, y, &img, kernel_size);
 
-        new_p[0] = s.x_normals();
-        new_p[1] = -s.y_normals();
+        new_p[0] = s.x_normals(kernel_size);
+        new_p[1] = -s.y_normals(kernel_size);
         new_p[2] = 1.0 / strength;
 
         let new_p = scale_normalized_to_0_to_1(&normalize(new_p));

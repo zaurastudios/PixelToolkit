@@ -27,7 +27,7 @@ export default function ProjectConfig({
   texturePath: string;
 }) {
   const [tabOption, setTabOption] = useState<TabOptions>("normal");
-  const [textureFile, setTextureFile] = useState<TextureFilesTypes>("Color");
+  const [textureFile, setTextureFile] = useState<TextureFilesTypes>("Normal");
   const [materialPath, setMaterialPath] = useState("");
 
   useEffect(() => {

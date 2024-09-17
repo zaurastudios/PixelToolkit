@@ -29,7 +29,10 @@ pub fn generate_normal_map(path: &Path) -> PngImage {
         }
     }
 
-    let tiled_normal_map = normal_map::map_normals(&DynamicImage::ImageRgba8(tiled_img));
+    let tiled_normal_map = normal_map::map_normals(
+        &DynamicImage::ImageRgba8(tiled_img),
+        normal_map::KernelSize::Low,
+    );
     let tiled_normal_map_buf = tiled_normal_map.into_raw();
 
     // Extract the middle tile
