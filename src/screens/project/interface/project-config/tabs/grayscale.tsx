@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { isNumber } from "@/lib/utils";
+import { isNumber, toString } from "@/lib/utils";
 import { AddAdditionalType } from "@/types";
 import { DefaultsGrayscale } from "@/types/interface";
 import { invoke } from "@tauri-apps/api/core";
@@ -27,12 +27,6 @@ export function Grayscale({
 
   const [values, setValues] =
     useState<AddAdditionalType<DefaultsGrayscale, string>>(defaultValues);
-
-  function toString(o: Object) {
-    return Object.fromEntries(
-      Object.entries(o).map(([k, v]) => [k, String(v)]),
-    );
-  }
 
   async function updateDefaults() {
     try {

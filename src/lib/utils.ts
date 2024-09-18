@@ -28,3 +28,7 @@ export function titleString(str: string): string {
 export function isNumber(value: any) {
   return /^-?\d*(\.\d+)?$/.test(value);
 }
+
+export function toString(o: Object) {
+  return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, String(v)]));
+}

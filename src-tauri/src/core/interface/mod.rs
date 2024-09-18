@@ -1,7 +1,7 @@
 pub mod normal;
 pub mod structs;
 use normal::generate_normal_map;
-use structs::{Defaults, DefaultsGrayscale, MatYml, PngImage, TextureFile, TEXTURE_FILES};
+use structs::{Defaults, DefaultsGrayscale, MatYml, Normal, PngImage, TextureFile, TEXTURE_FILES};
 
 use base64::{engine::general_purpose, Engine};
 use rayon::prelude::*;
@@ -11,10 +11,11 @@ use std::{
     io::Cursor,
     path::Path,
     sync::Arc,
-    time::Instant,
 };
 
 use tauri::Emitter;
+
+use super::normal_map::KernelSize;
 
 #[tauri::command]
 pub fn select_texture(material_path: String, app: tauri::AppHandle) -> Result<String, String> {
@@ -68,26 +69,46 @@ pub fn select_texture_file(
     // For mutlithreading process of data
     let mat_yml: Arc<MatYml> = Arc::new(load_mat_yml(path)?);
 
-    let normal_time = Instant::now();
     let base64_img = process_image(path, texture_file, mat_yml.clone())?;
-    println!("Time taken: {:?}", normal_time.elapsed());
 
     app.emit("selected-texture-file", base64_img.clone())
         .map_err(|e| format!("Failed to emit event: {}", e))?;
 
-    let texture_properties = get_texture_properties(&texture_file.name, &mat_yml);
+    let result = match texture_file.name {
+        "opacity" => {
+            let texture_properties = get_texture_properties_grayscale(&texture_file.name, &mat_yml);
 
-    let res = texture_properties.unwrap_or(DefaultsGrayscale {
-        value: Some(0.0),
-        shift: Some(0.0),
-        scale: Some(1.0),
-    });
+            let res = texture_properties.unwrap_or(DefaultsGrayscale {
+                value: Some(0.0),
+                shift: Some(0.0),
+                scale: Some(1.0),
+            });
 
-    let result = serde_json::to_string(&res).map_err(|e| {
-        let err = format!("Failed to serialize extended grayscale: {}", e);
-        eprintln!("{}", err);
-        err
-    });
+            serde_json::to_string(&res).map_err(|e| {
+                let err = format!("Failed to serialize extended grayscale: {}", e);
+                eprintln!("{}", err);
+                err
+            })
+        }
+        "normal" => {
+            let res = mat_yml.normal.clone().unwrap_or(Normal {
+                curve_x: Some(0.0),
+                curve_y: Some(0.0),
+                radius_size_x: Some(0.0),
+                radius_size_y: Some(0.0),
+                noise_angle: Some(0.0),
+                method: 0,
+                strength: Some(1.0),
+            });
+
+            serde_json::to_string(&res).map_err(|e| {
+                let err = format!("Failed to serialize extended grayscale: {}", e);
+                eprintln!("{}", err);
+                err
+            })
+        }
+        _ => Err(String::from("Doesn't exist")),
+    };
 
     result
 }
@@ -107,7 +128,27 @@ fn process_image(
         process_grayscale_image(&img, texture_file, &mat_yml)
     } else if texture_file.name == "normal" && is_default {
         match find_matching_file(path, r".*(?i)height.*\.png$") {
-            Some(file) => generate_normal_map(&file.path()),
+            Some(file) => {
+                let normal = mat_yml.normal.as_ref().unwrap_or(&Normal {
+                    curve_x: Some(0.0),
+                    curve_y: Some(0.0),
+                    radius_size_x: Some(0.0),
+                    radius_size_y: Some(0.0),
+                    noise_angle: Some(0.0),
+                    method: 0,
+                    strength: Some(1.0),
+                });
+
+                let size = match normal.method {
+                    0 => KernelSize::Three,
+                    1 => KernelSize::Five,
+                    2 => KernelSize::Nine,
+                    3 => KernelSize::Low,
+                    4 => KernelSize::High,
+                    _ => KernelSize::Three,
+                };
+                generate_normal_map(&file.path(), size, normal.strength.unwrap())
+            }
             None => img,
         }
     } else {
@@ -213,7 +254,7 @@ fn process_grayscale_image(
     ]
     .contains(&texture_file.name)
     {
-        if let Some(texture) = get_texture_properties(&texture_file.name, mat_yml) {
+        if let Some(texture) = get_texture_properties_grayscale(&texture_file.name, mat_yml) {
             let processed =
                 process_pixels_grayscale_common(&luma_img, info.width, info.height, &texture);
 
@@ -279,7 +320,10 @@ fn find_matching_file(path: &Path, pattern: &str) -> Option<fs::DirEntry> {
         })
 }
 
-fn get_texture_properties(texture_name: &str, mat_yml: &MatYml) -> Option<DefaultsGrayscale> {
+fn get_texture_properties_grayscale(
+    texture_name: &str,
+    mat_yml: &MatYml,
+) -> Option<DefaultsGrayscale> {
     let result = match texture_name {
         "opacity" => mat_yml.opacity.clone(),
         "rough" => mat_yml.rough.clone(),
@@ -372,4 +416,61 @@ fn image_to_base64(img: &PngImage) -> Result<String, String> {
     }
 
     Ok(general_purpose::STANDARD.encode(&png_data))
+}
+
+#[tauri::command]
+pub fn update_normals(
+    material_path: String,
+    curve_x: String,
+    curve_y: String,
+    radius_size_x: String,
+    radius_size_y: String,
+    noise_angle: String,
+    method: String,
+    strength: String,
+) -> Result<bool, String> {
+    let path = Path::new(&material_path);
+    if !path.exists() {
+        return Err(String::from("Selected path does not exist."));
+    }
+
+    let mat_yml_str = fs::read_to_string(path.join("mat.yml")).map_err(|e| {
+        let err = format!("Failed to read mat.yml file {}\n {}", material_path, e);
+        eprintln!("{}", err);
+        err
+    })?;
+    let mut mat_yml: MatYml = serde_yaml::from_str(&mat_yml_str).map_err(|e| {
+        let err = format!("Failed to deserialise mat.yml file {}", e);
+        eprintln!("{}", err);
+        err
+    })?;
+
+    let parsed_curve_x = curve_x.parse::<f32>().unwrap_or(0.0);
+    let parsed_curve_y = curve_y.parse::<f32>().unwrap_or(0.0);
+    let parsed_radius_size_x = radius_size_x.parse::<f32>().unwrap_or(0.0);
+    let parsed_radius_size_y = radius_size_y.parse::<f32>().unwrap_or(0.0);
+    let parsed_noise_angle = noise_angle.parse::<f32>().unwrap_or(0.0);
+
+    let parsed_method = method.parse::<usize>().unwrap_or(0);
+    let parsed_strength = strength.parse::<f32>().unwrap_or(1.0);
+
+    mat_yml.normal = Some(Normal {
+        curve_x: Some(parsed_curve_x),
+        curve_y: Some(parsed_curve_y),
+        radius_size_x: Some(parsed_radius_size_x),
+        radius_size_y: Some(parsed_radius_size_y),
+        noise_angle: Some(parsed_noise_angle),
+        method: parsed_method,
+        strength: Some(parsed_strength),
+    });
+
+    let updated_mat_yml = serde_yaml::to_string(&mat_yml).map_err(|e| {
+        let err = format!("Failed to serialize mat.yml file {}", e);
+        eprintln!("{}", err);
+        err
+    })?;
+
+    fs::write(&path.join("mat.yml"), updated_mat_yml).map_err(|e| e.to_string())?;
+
+    Ok(true)
 }

@@ -11,7 +11,6 @@ import {
   RepeatWrapping,
   TextureLoader,
 } from "three";
-import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 
 export function TextureCanvas() {

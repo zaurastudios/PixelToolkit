@@ -21,10 +21,20 @@ pub struct DefaultsGrayscale {
     pub shift: Option<f32>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Normal {
-    pub curve_x: Option<usize>,
-    pub curve_y: Option<usize>,
+    // Filtering
+    pub curve_x: Option<f32>,
+    pub curve_y: Option<f32>,
+
+    pub radius_size_x: Option<f32>,
+    pub radius_size_y: Option<f32>,
+
+    pub noise_angle: Option<f32>,
+
+    // Generate from height
+    pub method: usize,
+    pub strength: Option<f32>,
 }
 
 pub struct TextureFile {

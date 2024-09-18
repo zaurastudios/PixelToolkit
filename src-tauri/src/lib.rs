@@ -31,6 +31,7 @@ pub fn run() {
             core::interface::select_texture,
             core::interface::select_texture_file,
             core::interface::update_defaults_grayscale,
+            core::interface::update_normals,
         ])
         .setup(|_app| {
             #[cfg(desktop)]
