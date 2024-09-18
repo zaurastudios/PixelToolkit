@@ -7,13 +7,22 @@ use crate::core::{
 };
 
 use image::{DynamicImage, GenericImageView, ImageBuffer};
+use nalgebra::{Rotation3, Vector3};
 
 // const SOBEL_3X3: [[[i32; 3]; 3]; 2] = [
 //     [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], // Sobel X
 //     [[-1, -2, -1], [0, 0, 0], [1, 2, 1]], // Sobel Y
 // ];
 
-pub fn generate_normal_map(path: &Path, size: KernelSize, strength: f32) -> PngImage {
+pub fn generate_normal_map(
+    path: &Path,
+    size: KernelSize,
+    strength: f32,
+    curve_x: f32,
+    curve_y: f32,
+    radius_x: f32,
+    radius_y: f32,
+) -> PngImage {
     let img = image::open(path).unwrap();
     let (width, height) = img.dimensions();
 
@@ -73,7 +82,15 @@ pub fn generate_normal_map(path: &Path, size: KernelSize, strength: f32) -> PngI
     }
 
     PngImage {
-        buf: normal_map,
+        buf: apply_curved_normals(
+            &mut normal_map,
+            width as usize,
+            height as usize,
+            curve_x,
+            curve_y,
+            radius_x,
+            radius_y,
+        ),
         info: Defaults {
             bit_depth: png::BitDepth::Eight,
             color_type: png::ColorType::Rgb,
@@ -83,4 +100,52 @@ pub fn generate_normal_map(path: &Path, size: KernelSize, strength: f32) -> PngI
         },
         palette: None,
     }
+}
+
+pub fn apply_curved_normals(
+    normal_map: &mut Vec<u8>,
+    width: usize,
+    height: usize,
+    curve_y_deg: f32,
+    curve_x_deg: f32,
+    radius_y: f32,
+    radius_x: f32,
+) -> Vec<u8> {
+    let curve_x_rad = curve_x_deg.to_radians();
+    let curve_y_rad = curve_y_deg.to_radians();
+
+    for y in 0..height {
+        for x in 0..width {
+            let index = (y * width + x) * 3;
+
+            // Convert RGB to normal vector
+            let mut normal = Vector3::new(
+                (normal_map[index] as f32 / 255.0) * 2.0 - 1.0,
+                (normal_map[index + 1] as f32 / 255.0) * 2.0 - 1.0,
+                (normal_map[index + 2] as f32 / 255.0) * 2.0 - 1.0,
+            );
+
+            // Apply curvature
+            let rotation_y = Rotation3::from_axis_angle(
+                &Vector3::x_axis(),
+                curve_x_rad * (y as f32 / height as f32 - 0.5)
+                    / (radius_x + (if radius_x == 0.0 { 1.0 } else { 0.0 })),
+            );
+            let rotation_x = Rotation3::from_axis_angle(
+                &Vector3::y_axis(),
+                curve_y_rad * (x as f32 / width as f32 - 0.5)
+                    / (radius_y + (if radius_y == 0.0 { 1.0 } else { 0.0 })),
+            );
+
+            normal = rotation_y * rotation_x * normal;
+            normal = normal.normalize();
+
+            // Convert back to RGB
+            normal_map[index] = ((normal.x + 1.0) * 0.5 * 255.0) as u8;
+            normal_map[index + 1] = ((normal.y + 1.0) * 0.5 * 255.0) as u8;
+            normal_map[index + 2] = ((normal.z + 1.0) * 0.5 * 255.0) as u8;
+        }
+    }
+
+    normal_map.to_vec()
 }

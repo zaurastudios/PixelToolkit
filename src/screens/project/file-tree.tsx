@@ -27,7 +27,7 @@ export const FileTreeSidebar: React.FC<{
   const projectPath = data?.projectPath;
 
   const [filteredFileTree, setFilteredFileTree] = useState(fileTree);
-  const [query, setQuery] = useState<string>("deepslate");
+  const [query, setQuery] = useState<string>("");
 
   useEffect(() => {
     const unlisten = listen<string>("resync_dir_fe", getFileTree);

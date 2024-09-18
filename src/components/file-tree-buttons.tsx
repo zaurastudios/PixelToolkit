@@ -53,8 +53,8 @@ export const FileTreeFolder: React.FC<{
     ): FlattenedEntry[] => {
       nodes.forEach((node) => {
         const currentPath = `${path}/${node.name}`;
-        // const isExpanded = expandedNodes.includes(currentPath);
-        const isExpanded = true;
+        const isExpanded = expandedNodes.includes(currentPath);
+        // const isExpanded = true;
 
         result.push({
           name: node.name,

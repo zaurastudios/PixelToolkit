@@ -1,6 +1,6 @@
 pub mod normal;
 pub mod structs;
-use normal::generate_normal_map;
+use normal::{apply_curved_normals, generate_normal_map};
 use structs::{Defaults, DefaultsGrayscale, MatYml, Normal, PngImage, TextureFile, TEXTURE_FILES};
 
 use base64::{engine::general_purpose, Engine};
@@ -94,8 +94,8 @@ pub fn select_texture_file(
             let res = mat_yml.normal.clone().unwrap_or(Normal {
                 curve_x: Some(0.0),
                 curve_y: Some(0.0),
-                radius_size_x: Some(0.0),
-                radius_size_y: Some(0.0),
+                radius_size_x: Some(0.5),
+                radius_size_y: Some(0.5),
                 noise_angle: Some(0.0),
                 method: 0,
                 strength: Some(1.0),
@@ -119,37 +119,59 @@ fn process_image(
     mat_yml: Arc<MatYml>,
 ) -> Result<String, String> {
     let matching_file = find_matching_file(path, &texture_file.pattern);
-    let (img, is_default) = match &matching_file {
-        Some(file) => (read_png_file(&file.path())?, false),
-        None => (create_default_image(texture_file), true),
+    let (mut img, original_exists) = match &matching_file {
+        Some(file) => (read_png_file(&file.path())?, true),
+        None => (create_default_image(texture_file), false),
     };
 
     let processed_img = if texture_file.grayscale {
         process_grayscale_image(&img, texture_file, &mat_yml)
-    } else if texture_file.name == "normal" && is_default {
-        match find_matching_file(path, r".*(?i)height.*\.png$") {
-            Some(file) => {
-                let normal = mat_yml.normal.as_ref().unwrap_or(&Normal {
-                    curve_x: Some(0.0),
-                    curve_y: Some(0.0),
-                    radius_size_x: Some(0.0),
-                    radius_size_y: Some(0.0),
-                    noise_angle: Some(0.0),
-                    method: 0,
-                    strength: Some(1.0),
-                });
+    } else if texture_file.name == "normal" {
+        let normal = mat_yml.normal.as_ref().unwrap_or(&Normal {
+            curve_x: Some(0.0),
+            curve_y: Some(0.0),
+            radius_size_x: Some(0.5),
+            radius_size_y: Some(0.5),
+            noise_angle: Some(0.0),
+            method: 0,
+            strength: Some(1.0),
+        });
 
-                let size = match normal.method {
-                    0 => KernelSize::Three,
-                    1 => KernelSize::Five,
-                    2 => KernelSize::Nine,
-                    3 => KernelSize::Low,
-                    4 => KernelSize::High,
-                    _ => KernelSize::Three,
-                };
-                generate_normal_map(&file.path(), size, normal.strength.unwrap())
+        let size = match normal.method {
+            0 => KernelSize::Three,
+            1 => KernelSize::Five,
+            2 => KernelSize::Nine,
+            3 => KernelSize::Low,
+            4 => KernelSize::High,
+            _ => KernelSize::Three,
+        };
+        if !original_exists {
+            match find_matching_file(path, r".*(?i)height.*\.png$") {
+                Some(file) => generate_normal_map(
+                    &file.path(),
+                    size,
+                    normal.strength.unwrap(),
+                    normal.curve_x.unwrap(),
+                    normal.curve_y.unwrap(),
+                    normal.radius_size_x.unwrap(),
+                    normal.radius_size_y.unwrap(),
+                ),
+                None => img,
             }
-            None => img,
+        } else {
+            PngImage {
+                buf: apply_curved_normals(
+                    &mut img.buf,
+                    img.info.width,
+                    img.info.height,
+                    normal.curve_x.unwrap(),
+                    normal.curve_y.unwrap(),
+                    normal.radius_size_x.unwrap(),
+                    normal.radius_size_y.unwrap(),
+                ),
+                info: img.info,
+                palette: None,
+            }
         }
     } else {
         img
@@ -447,8 +469,8 @@ pub fn update_normals(
 
     let parsed_curve_x = curve_x.parse::<f32>().unwrap_or(0.0);
     let parsed_curve_y = curve_y.parse::<f32>().unwrap_or(0.0);
-    let parsed_radius_size_x = radius_size_x.parse::<f32>().unwrap_or(0.0);
-    let parsed_radius_size_y = radius_size_y.parse::<f32>().unwrap_or(0.0);
+    let parsed_radius_size_x = radius_size_x.parse::<f32>().unwrap_or(0.5);
+    let parsed_radius_size_y = radius_size_y.parse::<f32>().unwrap_or(0.5);
     let parsed_noise_angle = noise_angle.parse::<f32>().unwrap_or(0.0);
 
     let parsed_method = method.parse::<usize>().unwrap_or(0);

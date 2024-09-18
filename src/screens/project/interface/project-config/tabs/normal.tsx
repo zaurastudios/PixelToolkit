@@ -27,8 +27,8 @@ export function Normal({
   const defaultValues: NormalMap = {
     curveX: 0,
     curveY: 0,
-    radiusSizeX: 0,
-    radiusSizeY: 0,
+    radiusSizeX: 0.5,
+    radiusSizeY: 0.5,
     noiseAngle: 0,
     method: 0,
     strength: 1,
