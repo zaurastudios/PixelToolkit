@@ -1,6 +1,6 @@
 // Modified from https://crates.io/crates/normal-heights
 
-use image::{DynamicImage, RgbImage};
+use image::{DynamicImage, ImageBuffer, Luma, RgbImage};
 use rayon::prelude::*;
 use std::sync::Arc;
 
@@ -110,12 +110,48 @@ pub fn map_normals_with_strength(
     strength: f32,
     kernel_size: KernelSize,
 ) -> RgbImage {
-    let img = img.to_luma8();
-    let (width, height) = img.dimensions();
+    let image = img.to_luma8();
+    let (width, height) = image.dimensions();
     let kernel = Arc::new(Kernel::new(kernel_size));
     let strength = strength;
 
-    let normal_map: Vec<(u32, u32, [u8; 3])> = (0..height)
+    let normal_map: Vec<(u32, u32, [u8; 3])> = match img.color() {
+        image::ColorType::Rgb8 => process_image(&img.to_luma8(), width, height, &kernel, strength),
+        image::ColorType::Rgb16 => {
+            process_image_16bit(&img.to_luma16(), width, height, &kernel, strength)
+        }
+        _ => {
+            let luma8 = img.to_luma8();
+            process_image(&luma8, width, height, &kernel, strength)
+        }
+    };
+
+    let mut normal_map_img = RgbImage::new(width, height);
+    for (x, y, pixel) in normal_map {
+        normal_map_img.put_pixel(x, y, image::Rgb(pixel));
+    }
+    normal_map_img
+}
+
+#[inline]
+fn normalize(v: [f32; 3]) -> [f32; 3] {
+    let v_mag = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    [v[0] / v_mag, v[1] / v_mag, v[2] / v_mag]
+}
+
+#[inline]
+fn scale_normalized_to_0_to_1(v: &[f32; 3]) -> [f32; 3] {
+    [v[0] * 0.5 + 0.5, v[1] * 0.5 + 0.5, v[2] * 0.5 + 0.5]
+}
+
+fn process_image(
+    img: &ImageBuffer<Luma<u8>, Vec<u8>>,
+    width: u32,
+    height: u32,
+    kernel: &Arc<Kernel>,
+    strength: f32,
+) -> Vec<(u32, u32, [u8; 3])> {
+    (0..height)
         .into_par_iter()
         .flat_map(move |y| {
             let kernel = kernel.clone();
@@ -156,22 +192,56 @@ pub fn map_normals_with_strength(
                 }
             })
         })
-        .collect();
-
-    let mut normal_map_img = RgbImage::new(width, height);
-    for (x, y, pixel) in normal_map {
-        normal_map_img.put_pixel(x, y, image::Rgb(pixel));
-    }
-    normal_map_img
+        .collect()
 }
 
-#[inline]
-fn normalize(v: [f32; 3]) -> [f32; 3] {
-    let v_mag = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    [v[0] / v_mag, v[1] / v_mag, v[2] / v_mag]
-}
+fn process_image_16bit(
+    img: &ImageBuffer<Luma<u16>, Vec<u16>>,
+    width: u32,
+    height: u32,
+    kernel: &Arc<Kernel>,
+    strength: f32,
+) -> Vec<(u32, u32, [u8; 3])> {
+    (0..height)
+        .into_par_iter()
+        .flat_map(move |y| {
+            let kernel = kernel.clone();
+            (0..width).into_par_iter().map({
+                let img = img.clone();
+                move |x| {
+                    let mut pixels = vec![vec![0.0; kernel.size]; kernel.size];
+                    for dy in 0..kernel.size {
+                        for dx in 0..kernel.size {
+                            let px = x
+                                .saturating_add(dx as u32)
+                                .saturating_sub((kernel.size / 2) as u32);
+                            let py = y
+                                .saturating_add(dy as u32)
+                                .saturating_sub((kernel.size / 2) as u32);
+                            pixels[dy][dx] = img.get_pixel(px.min(width - 1), py.min(height - 1))[0]
+                                as f32
+                                / u16::MAX as f32;
+                        }
+                    }
 
-#[inline]
-fn scale_normalized_to_0_to_1(v: &[f32; 3]) -> [f32; 3] {
-    [v[0] * 0.5 + 0.5, v[1] * 0.5 + 0.5, v[2] * 0.5 + 0.5]
+                    let x_normal = apply_kernel(&pixels, &kernel.x, kernel.size);
+                    let y_normal = -apply_kernel(&pixels, &kernel.y, kernel.size);
+                    let z_normal = 1.0 / strength;
+
+                    let normal = normalize([x_normal, y_normal, z_normal]);
+                    let rgb = scale_normalized_to_0_to_1(&normal);
+
+                    (
+                        x,
+                        y,
+                        [
+                            (rgb[0] * 255.0) as u8,
+                            (rgb[1] * 255.0) as u8,
+                            (rgb[2] * 255.0) as u8,
+                        ],
+                    )
+                }
+            })
+        })
+        .collect()
 }

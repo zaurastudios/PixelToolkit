@@ -6,7 +6,7 @@ use crate::core::{
     normal_map::{self, KernelSize},
 };
 
-use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
+use image::{DynamicImage, GenericImageView, ImageBuffer};
 
 // const SOBEL_3X3: [[[i32; 3]; 3]; 2] = [
 //     [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], // Sobel X
@@ -21,19 +21,43 @@ pub fn generate_normal_map(path: &Path, size: KernelSize, strength: f32) -> PngI
     let tiled_width = width * 3;
     let tiled_height = height * 3;
 
-    let mut tiled_img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(tiled_width, tiled_height);
+    let tiled_img = match img.color() {
+        image::ColorType::Rgb16 | image::ColorType::L16 | image::ColorType::Rgba16 => {
+            &DynamicImage::ImageRgb16({
+                let img_16 = img.to_rgb16();
+                let mut image =
+                    ImageBuffer::<image::Rgb<u16>, Vec<u16>>::new(tiled_width, tiled_height);
 
-    for y in 0..tiled_height {
-        for x in 0..tiled_width {
-            let src_x = x % width;
-            let src_y = y % height;
-            let pixel = img.get_pixel(src_x, src_y);
-            tiled_img.put_pixel(x, y, pixel);
+                for y in 0..tiled_height {
+                    for x in 0..tiled_width {
+                        let src_x = x % width;
+                        let src_y = y % height;
+                        let pixel = img_16.get_pixel(src_x, src_y);
+                        image.put_pixel(x, y, *pixel);
+                    }
+                }
+
+                image
+            })
         }
-    }
+        _ => &DynamicImage::ImageRgb8({
+            let img_8 = img.to_rgb8();
+            let mut image = ImageBuffer::<image::Rgb<u8>, Vec<u8>>::new(tiled_width, tiled_height);
 
-    let tiled_normal_map =
-        normal_map::map_normals_with_strength(&DynamicImage::ImageRgba8(tiled_img), strength, size);
+            for y in 0..tiled_height {
+                for x in 0..tiled_width {
+                    let src_x = x % width;
+                    let src_y = y % height;
+                    let pixel = img_8.get_pixel(src_x, src_y);
+                    image.put_pixel(x, y, *pixel);
+                }
+            }
+
+            image
+        }),
+    };
+
+    let tiled_normal_map = normal_map::map_normals_with_strength(tiled_img, strength, size);
     let tiled_normal_map_buf = tiled_normal_map.into_raw();
 
     // Extract the middle tile
