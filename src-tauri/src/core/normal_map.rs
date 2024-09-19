@@ -92,9 +92,17 @@ impl Kernel {
                 (x, y, 3)
             }
             KernelSize::Variance => {
-                let x = Arc::new(vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
-                let y = Arc::new(vec![vec![0.0, -1.0], vec![1.0, 0.0]]);
-                (x, y, 2)
+                let x = Arc::new(vec![
+                    vec![-1.0, 0.0, 1.0],
+                    vec![-2.0, 0.0, 2.0],
+                    vec![-1.0, 0.0, 1.0],
+                ]);
+                let y = Arc::new(vec![
+                    vec![-1.0, -2.0, -1.0],
+                    vec![0.0, 0.0, 0.0],
+                    vec![1.0, 2.0, 1.0],
+                ]);
+                (x, y, 3)
             }
         };
         Kernel { x, y, size }
