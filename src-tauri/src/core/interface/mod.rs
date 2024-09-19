@@ -143,6 +143,7 @@ fn process_image(
             2 => KernelSize::Nine,
             3 => KernelSize::Low,
             4 => KernelSize::High,
+            5 => KernelSize::Variance,
             _ => KernelSize::Three,
         };
         if !original_exists {
@@ -150,11 +151,11 @@ fn process_image(
                 Some(file) => generate_normal_map(
                     &file.path(),
                     size,
-                    normal.strength.unwrap(),
-                    normal.curve_x.unwrap(),
-                    normal.curve_y.unwrap(),
-                    normal.radius_size_x.unwrap(),
-                    normal.radius_size_y.unwrap(),
+                    normal.strength.unwrap_or(1.0),
+                    normal.curve_x.unwrap_or(0.0),
+                    normal.curve_y.unwrap_or(0.0),
+                    normal.radius_size_x.unwrap_or(1.0),
+                    normal.radius_size_y.unwrap_or(1.0),
                 ),
                 None => img,
             }

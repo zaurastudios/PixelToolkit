@@ -81,10 +81,12 @@ const Renderer = ({ selectedTexture }: { selectedTexture: string }) => {
   useKeyboardShortcut({
     key: "t",
     handler: toggleTiling,
+    shiftKey: true,
   });
   useKeyboardShortcut({
     key: "g",
     handler: toggleGrid,
+    shiftKey: true,
   });
 
   return (

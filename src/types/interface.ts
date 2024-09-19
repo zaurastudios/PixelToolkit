@@ -28,6 +28,7 @@ export const kernelSizes = {
   2: "Sobel 9x9",
   3: "Sobel-Low",
   4: "Sobel-High",
+  5: "Variance",
 };
 export interface NormalMap {
   // Filtering

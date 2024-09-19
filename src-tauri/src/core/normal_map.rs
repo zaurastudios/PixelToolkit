@@ -11,6 +11,7 @@ pub enum KernelSize {
     Nine,
     Low,
     High,
+    Variance,
 }
 
 struct Kernel {
@@ -89,6 +90,11 @@ impl Kernel {
                     vec![3.0, 10.0, 3.0],
                 ]);
                 (x, y, 3)
+            }
+            KernelSize::Variance => {
+                let x = Arc::new(vec![vec![-1.0, 0.0], vec![0.0, 1.0]]);
+                let y = Arc::new(vec![vec![0.0, -1.0], vec![1.0, 0.0]]);
+                (x, y, 2)
             }
         };
         Kernel { x, y, size }
