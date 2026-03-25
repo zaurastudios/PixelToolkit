@@ -10,6 +10,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fontsource-variable/montserrat": "^5.2.8",
+    "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-router": "^1.168.3",
     "@tanstack/react-router-devtools": "^1.166.11",
@@ -18,8 +20,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.6.0",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "shadcn": "^4.1.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2"
   },
