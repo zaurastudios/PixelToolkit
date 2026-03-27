@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { getProjects } from "./actions";
 import { PlusIcon, SpinnerGapIcon } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -63,10 +64,13 @@ function Index() {
                 {project.name}
               </button>
             ))}
-          <button className="group flex items-center justify-center gap-2.5 border-r border-b p-5">
+          <Button
+            variant="outline"
+            className="group flex h-max items-center justify-center gap-2.5 border-0 border-r border-b p-5"
+          >
             <PlusIcon className="-translate-y-px opacity-50 transition-opacity group-hover:opacity-100" />
             Create Project
-          </button>
+          </Button>
         </div>
       </div>
       <footer className="text-muted-foreground flex h-8 items-center justify-between border-t px-2.5">
