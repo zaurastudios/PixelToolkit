@@ -16,46 +16,53 @@ pub struct Project {
     pub date_modified: String,
 }
 
+impl Project {
+    fn resolve_pack_image(&mut self) {
+        let pack_image_path = Path::new(&self.path).join("pack.png");
+        self.pack_image = pack_image_path
+            .exists()
+            .then(|| pack_image_path.to_str().unwrap_or_default().to_string());
+    }
+}
+
 #[tauri::command]
 pub fn get_projects<R: Runtime>(app: AppHandle<R>) -> Result<serde_json::Value, String> {
     log::info!("Home: Getting projects");
-    let config_dir = match get_config_dir(&app) {
-        Ok(dir) => {
-            log::debug!("Home: Config dir found at {:?}", dir);
-            dir
-        }
-        Err(e) => {
-            let err = format!("Home: Failed to get config dir: {:?}", e);
-            log::error!("{}", err);
-            return Err(err);
-        }
-    };
+
+    let config_dir = get_config_dir(&app).map_err(|e| {
+        let err = format!("Home: Failed to get config dir: {:?}", e);
+        log::error!("{}", err);
+        err
+    })?;
+    log::debug!("Home: Config dir found at {:?}", config_dir);
 
     let projects_yml_path = config_dir.join("projects.yml");
     log::debug!("Home: projects.yml path: {:?}", projects_yml_path);
 
     if !projects_yml_path.exists() {
-        if let Err(e) = fs::write(&projects_yml_path, "") {
-            let err = format!("Home: Failed to create project: {}", e);
+        fs::write(&projects_yml_path, "").map_err(|e| {
+            let err = format!("Home: Failed to create projects.yml: {}", e);
             log::error!("{}", err);
-            return Err(err);
-        }
+            err
+        })?;
     }
 
-    let projects_content = fs::read_to_string(&projects_yml_path)
-        .map_err(|e| format!("Failed to read project file: {}", e))?;
-    let mut projects: Vec<Project> = serde_yaml::from_str(&projects_content)
-        .map_err(|e| format!("Failed to deserialize project file: {}", e))?;
-    projects.sort_by_key(|p| p.date_modified.clone());
-    projects.reverse();
+    let content = fs::read_to_string(&projects_yml_path).map_err(|e| {
+        let err = format!("Home: Failed to read projects.yml: {}", e);
+        log::error!("{}", err);
+        err
+    })?;
+
+    let mut projects: Vec<Project> = serde_yaml::from_str(&content).map_err(|e| {
+        let err = format!("Home: Failed to deserialize projects.yml: {}", e);
+        log::error!("{}", err);
+        err
+    })?;
+
+    projects.sort_by(|a, b| b.date_modified.cmp(&a.date_modified));
 
     for project in &mut projects {
-        let pack_image_path = Path::new(&project.path).join("pack.png");
-        if pack_image_path.exists() {
-            project.pack_image = Some(pack_image_path.to_str().unwrap_or_default().to_string());
-        } else {
-            project.pack_image = None;
-        }
+        project.resolve_pack_image();
     }
 
     Ok(json!(projects))
