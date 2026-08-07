@@ -1,0 +1,57 @@
+[workspace]
+resolver = "3"
+members = ["crates/ptkcore", "crates/ptkio"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+repository = "https://github.com/zaurastudios/PixelToolkit"
+description = "PixelToolkit"
+documentation = "https://ptk.zaura.net"                     # TODO: Will eventually come
+
+[workspace.dependencies]
+# WS
+ptkcore = { path = "crates/ptkcore" }
+ptkio = { path = "crates/ptkio" }
+
+# Ext
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_yaml_ng = "=0.10.0"
+serde_json = { version = "=1.0.151", features = ["preserve_order"] }
+rust_decimal = { version = "=1.42.1", features = ["serde-str"] }
+
+image = { version = "=0.25.10", default-features = false, features = [
+  "png",
+  "jpeg",
+  "bmp",
+  "gif",
+  "webp",
+  "tga",
+  "hdr",
+] }
+
+glam = "=0.33.3"
+rand = "=0.10.2"
+
+rayon = "=1.12.0"
+crossbeam-channel = "=0.5.16"
+parking_lot = "=0.12.5"
+
+zip = "=8.6.0"
+walkdir = "=2.5.0"
+globset = "=0.4.20"
+camino = "=1.2.5"
+
+clap = { version = "=4.6.6", features = ["derive"] }
+
+# TODO: GUI whether in egui or gpui
+
+thiserror = "=2.0.19"
+anyhow = "=1.0.104"
+tracing = "=0.1.44"
+tracing-subscriber = { version = "=0.3.23", features = ["env-filter", "json"] }
+tracing-appender = "=0.2.5"
+
+directories = "=6.0.0"
+rfd = "=0.17.2"
+notify = "=8.2.0"
