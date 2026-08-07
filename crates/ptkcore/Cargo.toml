@@ -7,3 +7,9 @@ description.workspace = true
 documentation.workspace = true
 
 [dependencies]
+serde.workspace = true
+serde_yaml_ng.workspace = true
+rust_decimal.workspace = true
+glam.workspace = true
+thiserror.workspace = true
+rand.workspace = true
