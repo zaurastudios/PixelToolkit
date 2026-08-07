@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/ptkcore", "crates/ptkio"]
+members = ["crates/ptkapp","crates/ptkcore", "crates/ptkio"]
 
 [workspace.package]
 version = "0.1.0"

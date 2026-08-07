@@ -1,0 +1,9 @@
+[package]
+name = "ptkapp"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+description.workspace = true
+documentation.workspace = true
+
+[dependencies]
